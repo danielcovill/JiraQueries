@@ -1,0 +1,7 @@
+project = smart 
+AND (status changed to Done after -10d  OR status changed to "Pull Request" after -7d ) 
+AND status not in ("In Progress", Blocked, Backlog) 
+AND (resolution is not EMPTY OR resolution != "won't do") 
+AND assignee != 2db7668c88e6ff0c3180ee58 
+AND type != sub-task 
+ORDER BY cf[10011] ASC, issuetype DESC, resolved ASC
