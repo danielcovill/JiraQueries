@@ -2,7 +2,7 @@ namespace work_charts
 {
     public class JqlSearchRequest
     {
-        public string query { get; set; }
+        public string jql { get; set; }
         public int startAt { get; set; }
         public int maxResults { get; set; }
         public string[] fields { get; set; }
@@ -11,7 +11,7 @@ namespace work_charts
         public string[] properties { get; set; }
         public bool fieldsByKeys { get; set; }
         public JqlSearchRequest(string query,
-            string[] fields,
+            string[] fields = null,
             string validateQuery = "strict",
             string[] expand = null,
             string[] properties = null,
@@ -19,12 +19,29 @@ namespace work_charts
             int startAt = 0,
             int maxResults = 300)
         {
-            this.query = query;
+            this.jql = query;
             this.startAt = startAt;
             this.maxResults = maxResults;
-            this.fields = fields;
+            this.fields = fields ?? new string[]
+            {
+                "key"
+                , "customfield_10014" // Epic
+                , "summary"
+                , "assignee"
+                , "customfield_10026" // Story Points
+                , "issuetype"
+                , "status"
+                , "resolution"
+                , "created"
+                , "resolved"
+                , "components"
+                , "creator"
+            };
             this.validateQuery = validateQuery;
-            this.expand = expand;
+            this.expand = expand ?? new string[]
+            {
+                "names"
+            };
             this.fieldsByKeys = fieldsByKeys;
             this.properties = properties;
         }

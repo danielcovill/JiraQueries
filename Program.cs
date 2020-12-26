@@ -6,12 +6,13 @@ namespace work_charts
 {
     class Program
     {
-        static async Task Main(string[] args)
+        public static async Task Main(string[] args)
         {
-            //await JiraConnector.RunDemo();
-            Console.WriteLine(File.ReadAllText("./Queries/completed_last_week.jql"));
-            Console.WriteLine();
-            //await JiraConnector.RunQuery(query);
+            var request = new JqlSearchRequest(File.ReadAllText("./Queries/completed_last_week.jql"));
+            string result = await JiraConnector.Instance.RunSearch(request);
+
+            //Temporary
+            File.WriteAllText(Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "out.json"), result);
         }
     }
 }
