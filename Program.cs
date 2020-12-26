@@ -9,7 +9,7 @@ namespace work_charts
         public static async Task Main(string[] args)
         {
             var request = new JqlSearchRequest(File.ReadAllText("./Queries/completed_last_week.jql"));
-            string result = await JiraConnector.Instance.RunSearch(request);
+            var result = await JiraConnector.Instance.RunSearch(request);
 
             //Temporary
             File.WriteAllText(Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "out.json"), result);

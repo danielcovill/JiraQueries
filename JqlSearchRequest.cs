@@ -38,10 +38,7 @@ namespace work_charts
                 , "creator"
             };
             this.validateQuery = validateQuery;
-            this.expand = expand ?? new string[]
-            {
-                "names"
-            };
+            this.expand = expand;
             this.fieldsByKeys = fieldsByKeys;
             this.properties = properties;
         }
