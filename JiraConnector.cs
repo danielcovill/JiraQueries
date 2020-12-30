@@ -42,32 +42,36 @@ namespace work_charts
                     .GetBytes($"{configuration["jiraUser"]}:{configuration["jiraApiKey"]}")));
         }
 
-        public async Task<string> RunSearch(JqlSearchRequest request)
+        public async Task<JiraSearchResponse> GetSearchResults(JqlSearchRequest request)
         {
-            var requestString = JsonSerializer.Serialize(request, typeof(JqlSearchRequest));
-            var jsonContent = JsonContent.Create(request,
-                typeof(JqlSearchRequest),
-                new MediaTypeHeaderValue("application/json"));
-            var response = await client.PostAsync("search", jsonContent);
-            response.EnsureSuccessStatusCode();
-            var deserializeOptions = new JsonSerializerOptions
-            {
-                Converters =
-                {
-                    new JiraDateTimeConverter()
-                }
-            };
-            JiraSearchResponse result = await response.Content.ReadFromJsonAsync<JiraSearchResponse>(deserializeOptions);
-            List<Issue> resultSet = result.issues;
-            while(result.total > result.maxResults) 
-            {
-                //repeat search for the next set of paged results and append total
-            }
+            JsonContent requestJsonContent;
+            HttpResponseMessage response;
+            JiraSearchResponse returnData;
+            var issueCollection = new List<Issue>();
 
-            //TODO: Build out paging mechanism
-            //if total is greater than maxresults, update startAt by whatever multiple is appropriate and re-request until done
-            //since I've already parsed the thing at this point, I should probably hand back a parsed response instead of a string
-            return "";
+            int iteration = 0;
+            // Loop exists in case the maxResults we have set is smaller than the total results needed to return all issues
+            do
+            {
+                request.startAt = request.maxResults * iteration++;
+                requestJsonContent = JsonContent.Create(request,
+                    typeof(JqlSearchRequest),
+                    new MediaTypeHeaderValue("application/json"));
+                response = await client.PostAsync("search", requestJsonContent);
+                response.EnsureSuccessStatusCode();
+                returnData = await response.Content.ReadFromJsonAsync<JiraSearchResponse>(
+                    new JsonSerializerOptions { 
+                        Converters = { new JiraDateTimeConverter() } 
+                    }
+                );
+                issueCollection.AddRange(returnData.issues);
+            } while (issueCollection.Count < returnData.total && returnData.total != 0);
+
+            returnData.issues = issueCollection;
+            returnData.total = issueCollection.Count;
+            returnData.startAt = request.startAt;
+            returnData.maxResults = issueCollection.Count;
+            return returnData;
         }
     }
 }

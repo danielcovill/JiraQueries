@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json.Serialization;
 
 namespace work_charts
@@ -417,5 +418,27 @@ namespace work_charts
         public List<Issue> issues { get; set; } 
         public List<string> warningMessages { get; set; } 
         public Names names { get; set; } 
+        public int GetTicketCount(string ticketType = null)
+        { 
+            if(ticketType == null) 
+            {
+                return total;
+            }
+            else
+            {
+                return issues.Where(issue => issue.fields.issuetype.name == ticketType).Count();
+            }
+        }
+        public double GetPointTotal(string ticketType = null)
+        { 
+            if(ticketType == null) 
+            {
+                return issues.Sum(issue => issue.fields.storyPoints) ?? 0;
+            }
+            else 
+            {
+                return issues.Where(issue => issue.fields.issuetype.name == ticketType).Sum(issue => issue.fields.storyPoints) ?? 0;
+            }
+        }
     }
 }
