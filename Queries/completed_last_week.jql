@@ -2,5 +2,5 @@ project = smart
 AND (status changed to Done after -7d  OR status changed to "Pull Request" after -7d ) 
 AND status not in ("In Progress", Blocked, Backlog) 
 AND (resolution is EMPTY OR resolution = Done) 
-AND type != sub-task 
+AND type NOT IN (Sub-task, Epic)
 ORDER BY cf[10011] ASC, issuetype DESC, resolved ASC

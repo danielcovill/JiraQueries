@@ -13,7 +13,7 @@ namespace work_charts
             var completedLastWeekResult = await JiraConnector.Instance.GetSearchResults(completedLastWeekRequest);
             var reporter = new JiraReporter();
             var xlsxOutputPath = Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), 
-                $"Previous-Week-{DateTime.Now.ToString("yyyy-MM-ddTHHmm-ssf")}.xlsx");
+                $"jira_report-{DateTime.Now.ToString("yyyy-MM-ddTHHmm-ssf")}.xlsx");
             Console.WriteLine(xlsxOutputPath);
             reporter.GenerateTicketListSummary(completedLastWeekResult, DateTime.Today.AddDays(-7), DateTime.Today,
                 Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), xlsxOutputPath));
