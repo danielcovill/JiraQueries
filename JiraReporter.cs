@@ -120,105 +120,127 @@ namespace work_charts
                         new CellFormat
                         {
                             NumberFormatId = 14,//format for date
-                                ApplyNumberFormat = true
+                            ApplyNumberFormat = true
                         },
                         new CellFormat
                         {
                             NumberFormatId = 22,//format for datetime
-                                ApplyNumberFormat = true
+                            ApplyNumberFormat = true
                         },
                         new CellFormat
                         {
                             NumberFormatId = 10,//format for percent
-                                ApplyNumberFormat = true
+                            ApplyNumberFormat = true
                         }
                     )
                 };
 
-                var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
-                worksheetPart.Worksheet = new Worksheet(new SheetData());
+                var overviewWorksheetPart = workbookPart.AddNewPart<WorksheetPart>();
+                var overviewSheetData = new SheetData();
+                overviewWorksheetPart.Worksheet = new Worksheet(overviewSheetData);
 
                 Sheets sheets = spreadsheetDocument.WorkbookPart.Workbook.AppendChild<Sheets>(new Sheets());
                 var summarySheet = new Sheet()
                 {
                     Name = "Rollup",
-                    Id = spreadsheetDocument.WorkbookPart.GetIdOfPart(worksheetPart),
+                    Id = spreadsheetDocument.WorkbookPart.GetIdOfPart(overviewWorksheetPart),
                     SheetId = sheetIdIterator++
                 };
                 sheets.Append(summarySheet);
 
-                InsertCellInWorksheet("A", 4, "Tickets", worksheetPart, FormatOptions.String);
-                InsertCellInWorksheet("A", 8, "Points", worksheetPart, FormatOptions.String);
+                InsertCellInWorksheet("A", 4, "Tickets", overviewSheetData, FormatOptions.String);
+                InsertCellInWorksheet("A", 8, "Points", overviewSheetData, FormatOptions.String);
+                InsertCellInWorksheet("A", 12, "Averages", overviewSheetData, FormatOptions.String);
 
-                InsertCellInWorksheet("E", 5, "Total Tkts", worksheetPart, FormatOptions.String);
-                InsertCellInWorksheet("E", 9, "Total Pts", worksheetPart, FormatOptions.String);
+                InsertCellInWorksheet("E", 5, "Total Tkts", overviewSheetData, FormatOptions.String);
+                InsertCellInWorksheet("E", 9, "Total Pts", overviewSheetData, FormatOptions.String);
                 var totalTickets = searchResponse.GetTicketCount();
                 var totalPts = searchResponse.GetPointTotal();
-                InsertCellInWorksheet("E", 6, totalTickets.ToString(), worksheetPart, FormatOptions.Number);
-                InsertCellInWorksheet("E", 10, totalPts.ToString(), worksheetPart, FormatOptions.Number);
+                InsertCellInWorksheet("E", 6, totalTickets.ToString(), overviewSheetData, FormatOptions.Number);
+                InsertCellInWorksheet("E", 10, totalPts.ToString(), overviewSheetData, FormatOptions.Number);
 
-                InsertCellInWorksheet("A", 1, "Start Date", worksheetPart, FormatOptions.String);
-                InsertCellInWorksheet("A", 2, startDate.ToShortDateString(), worksheetPart, FormatOptions.Date);
-                InsertCellInWorksheet("B", 1, "End Date", worksheetPart, FormatOptions.String);
-                InsertCellInWorksheet("B", 2, endDate.ToShortDateString(), worksheetPart, FormatOptions.Date);
+                InsertCellInWorksheet("A", 1, "Start Date", overviewSheetData, FormatOptions.String);
+                InsertCellInWorksheet("A", 2, startDate.ToShortDateString(), overviewSheetData, FormatOptions.Date);
+                InsertCellInWorksheet("B", 1, "End Date", overviewSheetData, FormatOptions.String);
+                InsertCellInWorksheet("B", 2, endDate.ToShortDateString(), overviewSheetData, FormatOptions.Date);
 
-                InsertCellInWorksheet("A", 5, "Maint Tkts", worksheetPart, FormatOptions.String);
-                InsertCellInWorksheet("A", 9, "Maint Pts", worksheetPart, FormatOptions.String);
+                InsertCellInWorksheet("A", 5, "Maint Tkts", overviewSheetData, FormatOptions.String);
+                InsertCellInWorksheet("A", 9, "Maint Pts", overviewSheetData, FormatOptions.String);
+                InsertCellInWorksheet("A", 13, "Maint Avg", overviewSheetData, FormatOptions.String);
                 var maintTicketCount = searchResponse.GetTicketCount(maintenance);
                 var maintTicketPts = searchResponse.GetPointTotal(maintenance);
-                InsertCellInWorksheet("A", 6, maintTicketCount.ToString(), worksheetPart, FormatOptions.Number);
-                InsertCellInWorksheet("A", 10, maintTicketPts.ToString(), worksheetPart, FormatOptions.Number);
+                InsertCellInWorksheet("A", 6, maintTicketCount.ToString(), overviewSheetData, FormatOptions.Number);
+                InsertCellInWorksheet("A", 10, maintTicketPts.ToString(), overviewSheetData, FormatOptions.Number);
+                InsertCellInWorksheet("A", 14, "=A10/A6", overviewSheetData, FormatOptions.Number, true);
 
-                InsertCellInWorksheet("F", 5, "Maint %", worksheetPart, FormatOptions.String);
-                InsertCellInWorksheet("F", 9, "Maint %", worksheetPart, FormatOptions.String);
-                InsertCellInWorksheet("F", 6, "=A6/SUM(A6:D6)", worksheetPart, FormatOptions.Percent, true);
-                InsertCellInWorksheet("F", 10, "=A10/SUM(A10:D10)", worksheetPart, FormatOptions.Percent, true);
 
-                InsertCellInWorksheet("B", 5, "Bug Tkts", worksheetPart, FormatOptions.String);
-                InsertCellInWorksheet("B", 9, "Bug Pts", worksheetPart, FormatOptions.String);
+                InsertCellInWorksheet("F", 5, "Maint %", overviewSheetData, FormatOptions.String);
+                InsertCellInWorksheet("F", 9, "Maint %", overviewSheetData, FormatOptions.String);
+                InsertCellInWorksheet("F", 6, "=A6/SUM(A6:D6)", overviewSheetData, FormatOptions.Percent, true);
+                InsertCellInWorksheet("F", 10, "=A10/SUM(A10:D10)", overviewSheetData, FormatOptions.Percent, true);
+
+                InsertCellInWorksheet("B", 5, "Bug Tkts", overviewSheetData, FormatOptions.String);
+                InsertCellInWorksheet("B", 9, "Bug Pts", overviewSheetData, FormatOptions.String);
+                InsertCellInWorksheet("B", 13, "Bug Avg", overviewSheetData, FormatOptions.String);
                 var bugTicketCount = searchResponse.GetTicketCount(bug);
                 var bugTicketPts = searchResponse.GetPointTotal(bug);
-                InsertCellInWorksheet("B", 6, bugTicketCount.ToString(), worksheetPart, FormatOptions.Number);
-                InsertCellInWorksheet("B", 10, bugTicketPts.ToString(), worksheetPart, FormatOptions.Number);
+                InsertCellInWorksheet("B", 6, bugTicketCount.ToString(), overviewSheetData, FormatOptions.Number);
+                InsertCellInWorksheet("B", 10, bugTicketPts.ToString(), overviewSheetData, FormatOptions.Number);
+                InsertCellInWorksheet("B", 14, "=B10/B6", overviewSheetData, FormatOptions.Number, true);
 
-                InsertCellInWorksheet("G", 5, "Bug %", worksheetPart, FormatOptions.String);
-                InsertCellInWorksheet("G", 9, "Bug %", worksheetPart, FormatOptions.String);
-                InsertCellInWorksheet("G", 6, "=B6/SUM(A6:D6)", worksheetPart, FormatOptions.Percent, true);
-                InsertCellInWorksheet("G", 10, "=B10/SUM(A10:D10)", worksheetPart, FormatOptions.Percent, true);
+                InsertCellInWorksheet("G", 5, "Bug %", overviewSheetData, FormatOptions.String);
+                InsertCellInWorksheet("G", 9, "Bug %", overviewSheetData, FormatOptions.String);
+                InsertCellInWorksheet("G", 6, "=B6/SUM(A6:D6)", overviewSheetData, FormatOptions.Percent, true);
+                InsertCellInWorksheet("G", 10, "=B10/SUM(A10:D10)", overviewSheetData, FormatOptions.Percent, true);
 
-                InsertCellInWorksheet("C", 5, "Task Tkts", worksheetPart, FormatOptions.String);
-                InsertCellInWorksheet("C", 9, "Task Pts", worksheetPart, FormatOptions.String);
+                InsertCellInWorksheet("C", 5, "Task Tkts", overviewSheetData, FormatOptions.String);
+                InsertCellInWorksheet("C", 9, "Task Pts", overviewSheetData, FormatOptions.String);
+                InsertCellInWorksheet("C", 13, "Task Avg", overviewSheetData, FormatOptions.String);
                 var taskTicketCount = searchResponse.GetTicketCount(task);
                 var taskTicketPts = searchResponse.GetPointTotal(task);
-                InsertCellInWorksheet("C", 6, taskTicketCount.ToString(), worksheetPart, FormatOptions.Number);
-                InsertCellInWorksheet("C", 10, taskTicketPts.ToString(), worksheetPart, FormatOptions.Number);
+                InsertCellInWorksheet("C", 6, taskTicketCount.ToString(), overviewSheetData, FormatOptions.Number);
+                InsertCellInWorksheet("C", 10, taskTicketPts.ToString(), overviewSheetData, FormatOptions.Number);
+                InsertCellInWorksheet("C", 14, "=C10/C6", overviewSheetData, FormatOptions.Number, true);
 
-                InsertCellInWorksheet("H", 5, "Task %", worksheetPart, FormatOptions.String);
-                InsertCellInWorksheet("H", 9, "Task %", worksheetPart, FormatOptions.String);
-                InsertCellInWorksheet("H", 6, "=C6/SUM(A6:D6)", worksheetPart, FormatOptions.Percent, true);
-                InsertCellInWorksheet("H", 10, "=C10/SUM(A10:D10)", worksheetPart, FormatOptions.Percent, true);
+                InsertCellInWorksheet("H", 5, "Task %", overviewSheetData, FormatOptions.String);
+                InsertCellInWorksheet("H", 9, "Task %", overviewSheetData, FormatOptions.String);
+                InsertCellInWorksheet("H", 6, "=C6/SUM(A6:D6)", overviewSheetData, FormatOptions.Percent, true);
+                InsertCellInWorksheet("H", 10, "=C10/SUM(A10:D10)", overviewSheetData, FormatOptions.Percent, true);
 
-                InsertCellInWorksheet("D", 5, "Story Tkts", worksheetPart, FormatOptions.String);
-                InsertCellInWorksheet("D", 9, "Story Pts", worksheetPart, FormatOptions.String);
+                InsertCellInWorksheet("D", 5, "Story Tkts", overviewSheetData, FormatOptions.String);
+                InsertCellInWorksheet("D", 9, "Story Pts", overviewSheetData, FormatOptions.String);
+                InsertCellInWorksheet("D", 13, "Story Avg", overviewSheetData, FormatOptions.String);
                 var storyTicketCount = searchResponse.GetTicketCount(story);
                 var storyTicketPts = searchResponse.GetPointTotal(story);
-                InsertCellInWorksheet("D", 6, storyTicketCount.ToString(), worksheetPart, FormatOptions.Number);
-                InsertCellInWorksheet("D", 10, storyTicketPts.ToString(), worksheetPart, FormatOptions.Number);
+                InsertCellInWorksheet("D", 6, storyTicketCount.ToString(), overviewSheetData, FormatOptions.Number);
+                InsertCellInWorksheet("D", 10, storyTicketPts.ToString(), overviewSheetData, FormatOptions.Number);
+                InsertCellInWorksheet("D", 14, "=D10/D6", overviewSheetData, FormatOptions.Number, true);
 
-                InsertCellInWorksheet("I", 5, "Story %", worksheetPart, FormatOptions.String);
-                InsertCellInWorksheet("I", 9, "Story %", worksheetPart, FormatOptions.String);
-                InsertCellInWorksheet("I", 6, "=D6/SUM(A6:D6)", worksheetPart, FormatOptions.Percent, true);
-                InsertCellInWorksheet("I", 10, "=D10/SUM(A10:D10)", worksheetPart, FormatOptions.Percent, true);
+                InsertCellInWorksheet("I", 5, "Story %", overviewSheetData, FormatOptions.String);
+                InsertCellInWorksheet("I", 9, "Story %", overviewSheetData, FormatOptions.String);
+                InsertCellInWorksheet("I", 6, "=D6/SUM(A6:D6)", overviewSheetData, FormatOptions.Percent, true);
+                InsertCellInWorksheet("I", 10, "=D10/SUM(A10:D10)", overviewSheetData, FormatOptions.Percent, true);
+
+                overviewWorksheetPart.Worksheet.Save();
 
 
+                var devWorksheetPart = spreadsheetDocument.WorkbookPart.AddNewPart<WorksheetPart>();
+                var devSheetData = new SheetData();
+                devWorksheetPart.Worksheet = new Worksheet(devSheetData);
+
+                var devBreakdownSheet = new Sheet()
+                {
+                    Name = "DevBreakdown",
+                    Id = spreadsheetDocument.WorkbookPart.GetIdOfPart(devWorksheetPart),
+                    SheetId = sheetIdIterator++
+                };
+                sheets.Append(devBreakdownSheet);
                 workbookPart.Workbook.Save();
             }
         }
 
-        private static Cell InsertCellInWorksheet(string columnName, uint rowIndex, string cellValue, WorksheetPart worksheetPart, FormatOptions format, bool isFormula = false)
+        private static Cell InsertCellInWorksheet(string columnName, uint rowIndex, string cellValue, SheetData sheetData, FormatOptions format, bool isFormula = false)
         {
-            Worksheet worksheet = worksheetPart.Worksheet;
-            SheetData sheetData = worksheet.GetFirstChild<SheetData>();
             string cellReference = columnName + rowIndex;
 
             // If the worksheet does not contain a row with the specified row index, insert one.
@@ -315,9 +337,9 @@ namespace work_charts
                 }
                 row.InsertBefore(newCell, refCell);
 
-                worksheet.Save();
                 return newCell;
             }
         }
+
     }
 }
