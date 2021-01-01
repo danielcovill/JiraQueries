@@ -100,40 +100,10 @@ namespace work_charts
             //     -> WorksheetPart 
             //         -> Worksheet 
             //             -> SheetData
-            using (SpreadsheetDocument spreadsheetDocument = SpreadsheetDocument.Create(xlsxOutputPath, SpreadsheetDocumentType.Workbook))
+            using (var spreadsheetDocument = CreateEmptySpreadsheet(xlsxOutputPath))
             {
                 uint sheetIdIterator = 1;
-                var workbookPart = spreadsheetDocument.AddWorkbookPart();
-                workbookPart.Workbook = new Workbook();
-
-                //add the style
-                // Add minimal Stylesheet
-                var stylesPart = spreadsheetDocument.WorkbookPart.AddNewPart<WorkbookStylesPart>();
-                stylesPart.Stylesheet = new Stylesheet
-                {
-                    Fonts = new Fonts(new Font()),
-                    Fills = new Fills(new Fill()),
-                    Borders = new Borders(new Border()),
-                    CellStyleFormats = new CellStyleFormats(new CellFormat()),
-                    CellFormats = new CellFormats(
-                        new CellFormat(),
-                        new CellFormat
-                        {
-                            NumberFormatId = 14,//format for date
-                            ApplyNumberFormat = true
-                        },
-                        new CellFormat
-                        {
-                            NumberFormatId = 22,//format for datetime
-                            ApplyNumberFormat = true
-                        },
-                        new CellFormat
-                        {
-                            NumberFormatId = 10,//format for percent
-                            ApplyNumberFormat = true
-                        }
-                    )
-                };
+                var workbookPart = spreadsheetDocument.WorkbookPart;
 
                 var overviewWorksheetPart = workbookPart.AddNewPart<WorksheetPart>();
                 var overviewSheetData = new SheetData();
@@ -341,5 +311,67 @@ namespace work_charts
             }
         }
 
+        private static Worksheet CreateSheetInDocument(SpreadsheetDocument spreadsheetDocument, string sheetName)
+        {
+            var workbookPart = spreadsheetDocument.WorkbookPart;
+            var worksheetPart = spreadsheetDocument.WorkbookPart.AddNewPart<WorksheetPart>();
+            var sheetData = new SheetData();
+            worksheetPart.Worksheet = new Worksheet(sheetData);
+
+            //add a sheets section if one doesn't already exist
+            Sheets sheets = spreadsheetDocument.WorkbookPart.Workbook.GetFirstChild<Sheets>();
+            if(sheets == null)
+            {
+                sheets = spreadsheetDocument.WorkbookPart.Workbook.AppendChild<Sheets>(new Sheets());
+            }
+
+            var sheetIdIterator = Convert.ToUInt32(sheets.ChildElements.Count()) + 1;
+            var summarySheet = new Sheet()
+            {
+                Name = sheetName,
+                Id = spreadsheetDocument.WorkbookPart.GetIdOfPart(worksheetPart),
+                SheetId = sheetIdIterator
+            };
+            sheets.Append(summarySheet);
+
+            return worksheetPart.Worksheet;
+        }
+
+        private static SpreadsheetDocument CreateEmptySpreadsheet(string xlsxOutputPath)
+        {
+            SpreadsheetDocument spreadsheetDocument = SpreadsheetDocument.Create(xlsxOutputPath, SpreadsheetDocumentType.Workbook);
+            var workbookPart = spreadsheetDocument.AddWorkbookPart();
+            workbookPart.Workbook = new Workbook();
+
+            // Add minimal Stylesheet
+            var stylesPart = spreadsheetDocument.WorkbookPart.AddNewPart<WorkbookStylesPart>();
+            stylesPart.Stylesheet = new Stylesheet
+            {
+                Fonts = new Fonts(new Font()),
+                Fills = new Fills(new Fill()),
+                Borders = new Borders(new Border()),
+                CellStyleFormats = new CellStyleFormats(new CellFormat()),
+                CellFormats = new CellFormats(
+                    new CellFormat(),
+                    new CellFormat
+                    {
+                        NumberFormatId = 14,//format for date
+                        ApplyNumberFormat = true
+                    },
+                    new CellFormat
+                    {
+                        NumberFormatId = 22,//format for datetime
+                        ApplyNumberFormat = true
+                    },
+                    new CellFormat
+                    {
+                        NumberFormatId = 10,//format for percent
+                        ApplyNumberFormat = true
+                    }
+                )
+            };
+
+            return spreadsheetDocument;
+        }
     }
 }
