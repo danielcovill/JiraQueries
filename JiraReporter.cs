@@ -102,21 +102,8 @@ namespace work_charts
             //             -> SheetData
             using (var spreadsheetDocument = CreateEmptySpreadsheet(xlsxOutputPath))
             {
-                uint sheetIdIterator = 1;
-                var workbookPart = spreadsheetDocument.WorkbookPart;
-
-                var overviewWorksheetPart = workbookPart.AddNewPart<WorksheetPart>();
-                var overviewSheetData = new SheetData();
-                overviewWorksheetPart.Worksheet = new Worksheet(overviewSheetData);
-
-                Sheets sheets = spreadsheetDocument.WorkbookPart.Workbook.AppendChild<Sheets>(new Sheets());
-                var summarySheet = new Sheet()
-                {
-                    Name = "Rollup",
-                    Id = spreadsheetDocument.WorkbookPart.GetIdOfPart(overviewWorksheetPart),
-                    SheetId = sheetIdIterator++
-                };
-                sheets.Append(summarySheet);
+                var rollupWorksheet = CreateSheetInDocument(spreadsheetDocument, "Rollup");
+                var overviewSheetData = rollupWorksheet.GetFirstChild<SheetData>();
 
                 InsertCellInWorksheet("A", 4, "Tickets", overviewSheetData, FormatOptions.String);
                 InsertCellInWorksheet("A", 8, "Points", overviewSheetData, FormatOptions.String);
@@ -191,21 +178,7 @@ namespace work_charts
                 InsertCellInWorksheet("I", 6, "=D6/SUM(A6:D6)", overviewSheetData, FormatOptions.Percent, true);
                 InsertCellInWorksheet("I", 10, "=D10/SUM(A10:D10)", overviewSheetData, FormatOptions.Percent, true);
 
-                overviewWorksheetPart.Worksheet.Save();
-
-
-                var devWorksheetPart = spreadsheetDocument.WorkbookPart.AddNewPart<WorksheetPart>();
-                var devSheetData = new SheetData();
-                devWorksheetPart.Worksheet = new Worksheet(devSheetData);
-
-                var devBreakdownSheet = new Sheet()
-                {
-                    Name = "DevBreakdown",
-                    Id = spreadsheetDocument.WorkbookPart.GetIdOfPart(devWorksheetPart),
-                    SheetId = sheetIdIterator++
-                };
-                sheets.Append(devBreakdownSheet);
-                workbookPart.Workbook.Save();
+                var devBreakdownWorksheet = CreateSheetInDocument(spreadsheetDocument, "DevBreakdown");
             }
         }
 
@@ -313,7 +286,6 @@ namespace work_charts
 
         private static Worksheet CreateSheetInDocument(SpreadsheetDocument spreadsheetDocument, string sheetName)
         {
-            var workbookPart = spreadsheetDocument.WorkbookPart;
             var worksheetPart = spreadsheetDocument.WorkbookPart.AddNewPart<WorksheetPart>();
             var sheetData = new SheetData();
             worksheetPart.Worksheet = new Worksheet(sheetData);
