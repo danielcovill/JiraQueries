@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -34,76 +35,26 @@ namespace work_charts
         /// </summary>
         /// <param name="issues">The list of issues over which to compute</param>
         /// <param name="xlsxOutputPath">If included output creates an xlsx document at the specified path. Otherwise output goes to the console.</param>
-        public void GenerateTicketListSummary(JiraSearchResponse searchResponse, DateTime startDate, DateTime endDate, string xlsxOutputPath = null)
+        public void GenerateTicketListSummary(JiraSearchResponse searchResponse, List<User> engineers, DateTime startDate, DateTime endDate, string xlsxOutputPath)
         {
             if (xlsxOutputPath == null)
             {
-                Console.WriteLine("-- Ticket Counts --");
-                Console.WriteLine($"Maintenance Tickets: {searchResponse.GetTicketCount(maintenance)}");
-                Console.WriteLine($"Bug Tickets        : {searchResponse.GetTicketCount(bug)}");
-                Console.WriteLine($"Task Tickets       : {searchResponse.GetTicketCount(task)}");
-                Console.WriteLine($"Story Tickets      : {searchResponse.GetTicketCount(story)}");
-                Console.WriteLine();
-
-                Console.WriteLine("-- Ticket Ratios --");
-                double sumTotalTickets = searchResponse.GetTicketCount();
-                Console.WriteLine($"Maintenance Tickets: {(searchResponse.GetTicketCount(maintenance) / sumTotalTickets).ToString("P")}");
-                Console.WriteLine($"Bug Tickets        : {(searchResponse.GetTicketCount(bug) / sumTotalTickets).ToString("P")}");
-                Console.WriteLine($"Task Tickets       : {(searchResponse.GetTicketCount(task) / sumTotalTickets).ToString("P")}");
-                Console.WriteLine($"Story Tickets      : {(searchResponse.GetTicketCount(story) / sumTotalTickets).ToString("P")}");
-                Console.WriteLine();
-
-                Console.WriteLine("-- Point Totals --");
-                Console.WriteLine($"Maintenance Points: {searchResponse.GetPointTotal(maintenance)}");
-                Console.WriteLine($"Bug Points        : {searchResponse.GetPointTotal(bug)}");
-                Console.WriteLine($"Task Points       : {searchResponse.GetPointTotal(task)}");
-                Console.WriteLine($"Story Points      : {searchResponse.GetPointTotal(story)}");
-                Console.WriteLine();
-
-                Console.WriteLine("-- Point Ratios --");
-                double sumTotalPoints = searchResponse.GetPointTotal();
-                Console.WriteLine($"Maintenance Points: {(searchResponse.GetPointTotal(maintenance) / sumTotalPoints).ToString("P")}");
-                Console.WriteLine($"Bug Points        : {(searchResponse.GetPointTotal(bug) / sumTotalPoints).ToString("P")}");
-                Console.WriteLine($"Task Points       : {(searchResponse.GetPointTotal(task) / sumTotalPoints).ToString("P")}");
-                Console.WriteLine($"Story Points      : {(searchResponse.GetPointTotal(story) / sumTotalPoints).ToString("P")}");
-                Console.WriteLine();
-
-                Console.WriteLine("-- Per Employee Stats --");
-                foreach (var assigneeIssuesSet in searchResponse.issues.GroupBy(issue => issue.fields.assignee))
-                {
-                    if (assigneeIssuesSet.Key == null)
-                    {
-                        Console.WriteLine("- Unassigned");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"- {assigneeIssuesSet.Key.displayName}");
-                    }
-                    Console.WriteLine($"Total Tickets      : {assigneeIssuesSet.Count()}");
-                    Console.WriteLine($"Maintenance Tickets: {assigneeIssuesSet.Count(issue => issue.fields.issuetype.name == maintenance)}");
-                    Console.WriteLine($"Bug Tickets        : {assigneeIssuesSet.Count(issue => issue.fields.issuetype.name == bug)}");
-                    Console.WriteLine($"Task Tickets       : {assigneeIssuesSet.Count(issue => issue.fields.issuetype.name == task)}");
-                    Console.WriteLine($"Story Tickets      : {assigneeIssuesSet.Count(issue => issue.fields.issuetype.name == story)}");
-                    Console.WriteLine();
-                }
-                return;
+                throw new Exception("Output path required");
             }
-
             if (File.Exists(xlsxOutputPath))
             {
                 throw new Exception("File already exists");
             }
-            // SpreadsheetDocument 
-            // -> WorkbookPart 
-            //     -> Workbook
-            //         -> <Sheets> -> Sheet
-            //     -> WorksheetPart 
-            //         -> Worksheet 
-            //             -> SheetData
             using (var spreadsheetDocument = CreateEmptySpreadsheet(xlsxOutputPath))
             {
+                //Create Rollup Worksheet
                 var rollupWorksheet = CreateSheetInDocument(spreadsheetDocument, "Rollup");
                 var overviewSheetData = rollupWorksheet.GetFirstChild<SheetData>();
+
+                InsertCellInWorksheet("A", 1, "Start Date", overviewSheetData, FormatOptions.String);
+                InsertCellInWorksheet("A", 2, startDate.ToShortDateString(), overviewSheetData, FormatOptions.Date);
+                InsertCellInWorksheet("B", 1, "End Date", overviewSheetData, FormatOptions.String);
+                InsertCellInWorksheet("B", 2, endDate.ToShortDateString(), overviewSheetData, FormatOptions.Date);
 
                 InsertCellInWorksheet("A", 4, "Tickets", overviewSheetData, FormatOptions.String);
                 InsertCellInWorksheet("A", 8, "Points", overviewSheetData, FormatOptions.String);
@@ -115,11 +66,6 @@ namespace work_charts
                 var totalPts = searchResponse.GetPointTotal();
                 InsertCellInWorksheet("E", 6, totalTickets.ToString(), overviewSheetData, FormatOptions.Number);
                 InsertCellInWorksheet("E", 10, totalPts.ToString(), overviewSheetData, FormatOptions.Number);
-
-                InsertCellInWorksheet("A", 1, "Start Date", overviewSheetData, FormatOptions.String);
-                InsertCellInWorksheet("A", 2, startDate.ToShortDateString(), overviewSheetData, FormatOptions.Date);
-                InsertCellInWorksheet("B", 1, "End Date", overviewSheetData, FormatOptions.String);
-                InsertCellInWorksheet("B", 2, endDate.ToShortDateString(), overviewSheetData, FormatOptions.Date);
 
                 InsertCellInWorksheet("A", 5, "Maint Tkts", overviewSheetData, FormatOptions.String);
                 InsertCellInWorksheet("A", 9, "Maint Pts", overviewSheetData, FormatOptions.String);
@@ -178,7 +124,71 @@ namespace work_charts
                 InsertCellInWorksheet("I", 6, "=D6/SUM(A6:D6)", overviewSheetData, FormatOptions.Percent, true);
                 InsertCellInWorksheet("I", 10, "=D10/SUM(A10:D10)", overviewSheetData, FormatOptions.Percent, true);
 
+                //Create Per Developer Breakdown Worksheet
+                uint rowIndex = 1;
                 var devBreakdownWorksheet = CreateSheetInDocument(spreadsheetDocument, "DevBreakdown");
+                var devBreakdownSheetData = devBreakdownWorksheet.GetFirstChild<SheetData>();
+
+                InsertCellInWorksheet("A", rowIndex, "Start Date", devBreakdownSheetData, FormatOptions.String);
+                InsertCellInWorksheet("B", rowIndex, "End Date", devBreakdownSheetData, FormatOptions.String);
+                rowIndex++;
+                InsertCellInWorksheet("A", rowIndex, startDate.ToShortDateString(), devBreakdownSheetData, FormatOptions.Date);
+                InsertCellInWorksheet("B", rowIndex, endDate.ToShortDateString(), devBreakdownSheetData, FormatOptions.Date);
+                rowIndex++;
+
+                foreach (var engineer in engineers)
+                {
+                    rowIndex++;
+                    InsertCellInWorksheet("A", rowIndex, engineer.displayName, devBreakdownSheetData, FormatOptions.String);
+                    rowIndex++;
+                    //Ticket Count Header Row
+                    InsertCellInWorksheet("B", rowIndex, "Total Tkts", devBreakdownSheetData, FormatOptions.String);
+                    InsertCellInWorksheet("C", rowIndex, "Maint Tkts", devBreakdownSheetData, FormatOptions.String);
+                    InsertCellInWorksheet("D", rowIndex, "Bug Tkts", devBreakdownSheetData, FormatOptions.String);
+                    InsertCellInWorksheet("E", rowIndex, "Task Tkts", devBreakdownSheetData, FormatOptions.String);
+                    InsertCellInWorksheet("F", rowIndex, "Story Tkts", devBreakdownSheetData, FormatOptions.String);
+                    InsertCellInWorksheet("G", rowIndex, "Maint %", devBreakdownSheetData, FormatOptions.String);
+                    InsertCellInWorksheet("H", rowIndex, "Bug %", devBreakdownSheetData, FormatOptions.String);
+                    InsertCellInWorksheet("I", rowIndex, "Task %", devBreakdownSheetData, FormatOptions.String);
+                    InsertCellInWorksheet("J", rowIndex, "Story %", devBreakdownSheetData, FormatOptions.String);
+                    rowIndex++;
+                    //Ticket Counts
+                    InsertCellInWorksheet("B", rowIndex, searchResponse.GetTicketCount(accountId: engineer.accountId).ToString(), devBreakdownSheetData, FormatOptions.Number);
+                    InsertCellInWorksheet("C", rowIndex, searchResponse.GetTicketCount(maintenance, engineer.accountId).ToString(), devBreakdownSheetData, FormatOptions.Number);
+                    InsertCellInWorksheet("D", rowIndex, searchResponse.GetTicketCount(bug, engineer.accountId).ToString(), devBreakdownSheetData, FormatOptions.Number);
+                    InsertCellInWorksheet("E", rowIndex, searchResponse.GetTicketCount(task, engineer.accountId).ToString(), devBreakdownSheetData, FormatOptions.Number);
+                    InsertCellInWorksheet("F", rowIndex, searchResponse.GetTicketCount(story, engineer.accountId).ToString(), devBreakdownSheetData, FormatOptions.Number);
+                    //Ticket Percentages
+                    InsertCellInWorksheet("G", rowIndex, $"=C{rowIndex}/SUM(C{rowIndex}:F{rowIndex})", devBreakdownSheetData, FormatOptions.Percent, true);
+                    InsertCellInWorksheet("H", rowIndex, $"=D{rowIndex}/SUM(C{rowIndex}:F{rowIndex})", devBreakdownSheetData, FormatOptions.Percent, true);
+                    InsertCellInWorksheet("I", rowIndex, $"=E{rowIndex}/SUM(C{rowIndex}:F{rowIndex})", devBreakdownSheetData, FormatOptions.Percent, true);
+                    InsertCellInWorksheet("J", rowIndex, $"=F{rowIndex}/SUM(C{rowIndex}:F{rowIndex})", devBreakdownSheetData, FormatOptions.Percent, true);
+                    rowIndex++;
+                    //Points Header Row
+                    InsertCellInWorksheet("B", rowIndex, "Total Pts", devBreakdownSheetData, FormatOptions.String);
+                    InsertCellInWorksheet("C", rowIndex, "Maint Pts", devBreakdownSheetData, FormatOptions.String);
+                    InsertCellInWorksheet("D", rowIndex, "Bug Pts", devBreakdownSheetData, FormatOptions.String);
+                    InsertCellInWorksheet("E", rowIndex, "Task Pts", devBreakdownSheetData, FormatOptions.String);
+                    InsertCellInWorksheet("F", rowIndex, "Story Pts", devBreakdownSheetData, FormatOptions.String);
+                    InsertCellInWorksheet("G", rowIndex, "Maint %", devBreakdownSheetData, FormatOptions.String);
+                    InsertCellInWorksheet("H", rowIndex, "Bug %", devBreakdownSheetData, FormatOptions.String);
+                    InsertCellInWorksheet("I", rowIndex, "Task %", devBreakdownSheetData, FormatOptions.String);
+                    InsertCellInWorksheet("J", rowIndex, "Story %", devBreakdownSheetData, FormatOptions.String);
+                    rowIndex++;
+                    //Points
+                    InsertCellInWorksheet("B", rowIndex, searchResponse.GetPointTotal(accountId: engineer.accountId).ToString(), devBreakdownSheetData, FormatOptions.Number);
+                    InsertCellInWorksheet("C", rowIndex, searchResponse.GetPointTotal(maintenance, engineer.accountId).ToString(), devBreakdownSheetData, FormatOptions.Number);
+                    InsertCellInWorksheet("D", rowIndex, searchResponse.GetPointTotal(bug, engineer.accountId).ToString(), devBreakdownSheetData, FormatOptions.Number);
+                    InsertCellInWorksheet("E", rowIndex, searchResponse.GetPointTotal(task, engineer.accountId).ToString(), devBreakdownSheetData, FormatOptions.Number);
+                    InsertCellInWorksheet("F", rowIndex, searchResponse.GetPointTotal(story, engineer.accountId).ToString(), devBreakdownSheetData, FormatOptions.Number);
+                    //Points Percentages
+                    InsertCellInWorksheet("G", rowIndex, $"=C{rowIndex}/SUM(C{rowIndex}:F{rowIndex})", devBreakdownSheetData, FormatOptions.Percent, true);
+                    InsertCellInWorksheet("H", rowIndex, $"=DowIndex}/SUM(C{rowIndex}:F{rowIndex})", devBreakdownSheetData, FormatOptions.Percent, true);
+                    InsertCellInWorksheet("I", rowIndex, $"=E{rowIndex}/SUM(C{rowIndex}:F{rowIndex})", devBreakdownSheetData, FormatOptions.Percent, true);
+                    InsertCellInWorksheet("J", rowIndex, $"=F{rowIndex}/SUM(C{rowIndex}:F{rowIndex})", devBreakdownSheetData, FormatOptions.Percent, true);
+                    rowIndex+;
+                }
+
             }
         }
 

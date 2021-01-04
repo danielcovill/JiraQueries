@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Net.Http.Json;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using System.Web;
 
 namespace work_charts
 {
@@ -60,8 +61,9 @@ namespace work_charts
                 response = await client.PostAsync("search", requestJsonContent);
                 response.EnsureSuccessStatusCode();
                 returnData = await response.Content.ReadFromJsonAsync<JiraSearchResponse>(
-                    new JsonSerializerOptions { 
-                        Converters = { new JiraDateTimeConverter() } 
+                    new JsonSerializerOptions
+                    {
+                        Converters = { new JiraDateTimeConverter() }
                     }
                 );
                 issueCollection.AddRange(returnData.issues);
@@ -71,6 +73,29 @@ namespace work_charts
             returnData.total = issueCollection.Count;
             returnData.startAt = request.startAt;
             returnData.maxResults = issueCollection.Count;
+            return returnData;
+        }
+
+        public async Task<JiraGroupResponse> GetGroup(JiraGroupRequest request)
+        {
+            HttpResponseMessage response;
+            JiraGroupResponse returnData;
+            var userCollection = new List<User>();
+
+            var iteration = 0;
+            do
+            {
+                request.startAt = request.maxResults * iteration++;
+                var query = $"group/member?groupname={HttpUtility.UrlEncode(request.groupname)}&startAt={request.startAt}&maxResults={request.maxResults}&includeinactiveusers=false";
+                response = await client.GetAsync(query);
+                response.EnsureSuccessStatusCode();
+                returnData = await response.Content.ReadFromJsonAsync<JiraGroupResponse>();
+                userCollection.AddRange(returnData.users);
+            } while (userCollection.Count < returnData.total && returnData.total != 0);
+            returnData.users = userCollection;
+            returnData.total = userCollection.Count;
+            returnData.startAt = request.startAt;
+            returnData.maxResults = userCollection.Count;
             return returnData;
         }
     }
