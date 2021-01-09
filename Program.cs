@@ -44,7 +44,7 @@ namespace work_charts
             {
                 case "Summary":
                     reporter.GenerateTicketListSummary(searchResult, engineers,
-                        Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), xlsxOutputPath));
+                        Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), xlsxOutputPath), jqlRestRequest.jql);
                     break;
                 case "WeeklyBreakdown":
                 default:

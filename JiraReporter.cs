@@ -35,7 +35,7 @@ namespace work_charts
         /// </summary>
         /// <param name="issues">The list of issues over which to compute</param>
         /// <param name="xlsxOutputPath">If included output creates an xlsx document at the specified path. Otherwise output goes to the console.</param>
-        public void GenerateTicketListSummary(JiraSearchResponse searchResponse, List<User> engineers, string xlsxOutputPath)
+        public void GenerateTicketListSummary(JiraSearchResponse searchResponse, List<User> engineers, string xlsxOutputPath, string sourceQuery)
         {
             if (xlsxOutputPath == null)
             {
@@ -183,6 +183,15 @@ namespace work_charts
                     InsertCellInWorksheet("J", rowIndex, $"=F{rowIndex}/SUM(C{rowIndex}:F{rowIndex})", devBreakdownSheetData, FormatOptions.Percent, true);
                     rowIndex++;
                 }
+
+                // Create sheet with details of query
+                var metaDataWorksheet = CreateSheetInDocument(spreadsheetDocument, "metadata");
+                var metaDataSheetData = metaDataWorksheet.GetFirstChild<SheetData>();
+                InsertCellInWorksheet("A", 1, "JQL", metaDataSheetData, FormatOptions.String);
+                InsertCellInWorksheet("A", 2, sourceQuery, metaDataSheetData, FormatOptions.String);
+                InsertCellInWorksheet("A", 4, "Run date/time", metaDataSheetData, FormatOptions.String);
+                InsertCellInWorksheet("A", 5, DateTime.Now.ToString(), metaDataSheetData, FormatOptions.String);
+
             }
         }
 
