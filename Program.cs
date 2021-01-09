@@ -43,12 +43,13 @@ namespace work_charts
             switch (requestedReport)
             {
                 case "Summary":
-                    reporter.GenerateTicketListSummary(searchResult, engineers, DateTime.Today.AddDays(-7), DateTime.Today,
+                    reporter.GenerateTicketListSummary(searchResult, engineers,
                         Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), xlsxOutputPath));
                     break;
                 case "WeeklyBreakdown":
                 default:
-                    Console.WriteLine("Report does not yet exist");
+                    reporter.GenerateWeeklySummary(searchResult, engineers, DateTime.Today.AddDays(-7), DateTime.Today,
+                        Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), xlsxOutputPath));
                     break;
             }
             Console.WriteLine($"Report generated: {xlsxOutputPath}");
