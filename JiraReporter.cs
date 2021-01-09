@@ -52,7 +52,6 @@ namespace work_charts
                 var overviewSheetData = rollupWorksheet.GetFirstChild<SheetData>();
 
                 uint rowIndex = 1;
-                var totalTickets = searchResponse.GetTicketCount();
                 var totalPts = searchResponse.GetPointTotal();
                 var maintTicketCount = searchResponse.GetTicketCount(maintenance);
                 var maintTicketPts = searchResponse.GetPointTotal(maintenance);
@@ -75,22 +74,22 @@ namespace work_charts
                 InsertCellInWorksheet("G", rowIndex, "Bug %", overviewSheetData, FormatOptions.String);
                 InsertCellInWorksheet("H", rowIndex, "Task %", overviewSheetData, FormatOptions.String);
                 InsertCellInWorksheet("I", rowIndex, "Story %", overviewSheetData, FormatOptions.String);
-                rowIndex++;
 
+                var ticketsRow = ++rowIndex;
                 InsertCellInWorksheet("A", rowIndex, maintTicketCount.ToString(), overviewSheetData, FormatOptions.Number);
                 InsertCellInWorksheet("B", rowIndex, bugTicketCount.ToString(), overviewSheetData, FormatOptions.Number);
                 InsertCellInWorksheet("C", rowIndex, taskTicketCount.ToString(), overviewSheetData, FormatOptions.Number);
                 InsertCellInWorksheet("D", rowIndex, storyTicketCount.ToString(), overviewSheetData, FormatOptions.Number);
-                InsertCellInWorksheet("E", rowIndex, totalTickets.ToString(), overviewSheetData, FormatOptions.Number);
-                InsertCellInWorksheet("F", rowIndex, "=A6/SUM(A6:D6)", overviewSheetData, FormatOptions.Percent, true);
-                InsertCellInWorksheet("G", rowIndex, "=B6/SUM(A6:D6)", overviewSheetData, FormatOptions.Percent, true);
-                InsertCellInWorksheet("H", rowIndex, "=C6/SUM(A6:D6)", overviewSheetData, FormatOptions.Percent, true);
-                InsertCellInWorksheet("I", rowIndex, "=D6/SUM(A6:D6)", overviewSheetData, FormatOptions.Percent, true);
+                InsertCellInWorksheet("E", rowIndex, $"=SUM(A{rowIndex}:D{rowIndex})", overviewSheetData, FormatOptions.Number, true);
+                InsertCellInWorksheet("F", rowIndex, $"=A{rowIndex}/SUM(A{rowIndex}:D{rowIndex})", overviewSheetData, FormatOptions.Percent, true);
+                InsertCellInWorksheet("G", rowIndex, $"=B{rowIndex}/SUM(A{rowIndex}:D{rowIndex})", overviewSheetData, FormatOptions.Percent, true);
+                InsertCellInWorksheet("H", rowIndex, $"=C{rowIndex}/SUM(A{rowIndex}:D{rowIndex})", overviewSheetData, FormatOptions.Percent, true);
+                InsertCellInWorksheet("I", rowIndex, $"=D{rowIndex}/SUM(A{rowIndex}:D{rowIndex})", overviewSheetData, FormatOptions.Percent, true);
+
                 rowIndex+=2;
-
                 InsertCellInWorksheet("A", rowIndex, "Points", overviewSheetData, FormatOptions.String);
-                rowIndex++;
 
+                rowIndex++;
                 InsertCellInWorksheet("A", rowIndex, "Maint Pts", overviewSheetData, FormatOptions.String);
                 InsertCellInWorksheet("B", rowIndex, "Bug Pts", overviewSheetData, FormatOptions.String);
                 InsertCellInWorksheet("C", rowIndex, "Task Pts", overviewSheetData, FormatOptions.String);
@@ -100,33 +99,32 @@ namespace work_charts
                 InsertCellInWorksheet("G", rowIndex, "Bug %", overviewSheetData, FormatOptions.String);
                 InsertCellInWorksheet("H", rowIndex, "Task %", overviewSheetData, FormatOptions.String);
                 InsertCellInWorksheet("I", rowIndex, "Story %", overviewSheetData, FormatOptions.String);
-                rowIndex++;
 
+                var pointsRow = ++rowIndex;
                 InsertCellInWorksheet("A", rowIndex, maintTicketPts.ToString(), overviewSheetData, FormatOptions.Number);
                 InsertCellInWorksheet("B", rowIndex, bugTicketPts.ToString(), overviewSheetData, FormatOptions.Number);
                 InsertCellInWorksheet("C", rowIndex, taskTicketPts.ToString(), overviewSheetData, FormatOptions.Number);
                 InsertCellInWorksheet("D", rowIndex, storyTicketPts.ToString(), overviewSheetData, FormatOptions.Number);
-                InsertCellInWorksheet("E", rowIndex, totalPts.ToString(), overviewSheetData, FormatOptions.Number);
-                InsertCellInWorksheet("F", rowIndex, "=A10/SUM(A10:D10)", overviewSheetData, FormatOptions.Percent, true);
-                InsertCellInWorksheet("G", rowIndex, "=B10/SUM(A10:D10)", overviewSheetData, FormatOptions.Percent, true);
-                InsertCellInWorksheet("H", rowIndex, "=C10/SUM(A10:D10)", overviewSheetData, FormatOptions.Percent, true);
-                InsertCellInWorksheet("I", rowIndex, "=D10/SUM(A10:D10)", overviewSheetData, FormatOptions.Percent, true);
+                InsertCellInWorksheet("E", rowIndex, $"=SUM(A{rowIndex}:D{rowIndex})", overviewSheetData, FormatOptions.Number, true);
+                InsertCellInWorksheet("F", rowIndex, $"=A{rowIndex}/SUM(A{rowIndex}:D{rowIndex})", overviewSheetData, FormatOptions.Percent, true);
+                InsertCellInWorksheet("G", rowIndex, $"=B{rowIndex}/SUM(A{rowIndex}:D{rowIndex})", overviewSheetData, FormatOptions.Percent, true);
+                InsertCellInWorksheet("H", rowIndex, $"=C{rowIndex}/SUM(A{rowIndex}:D{rowIndex})", overviewSheetData, FormatOptions.Percent, true);
+                InsertCellInWorksheet("I", rowIndex, $"=D{rowIndex}/SUM(A{rowIndex}:D{rowIndex})", overviewSheetData, FormatOptions.Percent, true);
+
                 rowIndex+=2;
-
                 InsertCellInWorksheet("A", rowIndex, "Averages", overviewSheetData, FormatOptions.String);
-                rowIndex++;
 
+                rowIndex++;
                 InsertCellInWorksheet("A", rowIndex, "Maint Avg", overviewSheetData, FormatOptions.String);
                 InsertCellInWorksheet("B", rowIndex, "Bug Avg", overviewSheetData, FormatOptions.String);
                 InsertCellInWorksheet("C", rowIndex, "Task Avg", overviewSheetData, FormatOptions.String);
                 InsertCellInWorksheet("D", rowIndex, "Story Avg", overviewSheetData, FormatOptions.String);
-                rowIndex++;
 
-                InsertCellInWorksheet("A", rowIndex, "=A10/A6", overviewSheetData, FormatOptions.Number, true);
-                InsertCellInWorksheet("B", rowIndex, "=B10/B6", overviewSheetData, FormatOptions.Number, true);
-                InsertCellInWorksheet("C", rowIndex, "=C10/C6", overviewSheetData, FormatOptions.Number, true);
-                InsertCellInWorksheet("D", rowIndex, "=D10/D6", overviewSheetData, FormatOptions.Number, true);
-                //TODO: Fix the formulas because the rows are all different now that I pulled the date fields
+                var averagesRow = ++rowIndex;
+                InsertCellInWorksheet("A", rowIndex, $"=A{pointsRow}/A{ticketsRow}", overviewSheetData, FormatOptions.Number, true);
+                InsertCellInWorksheet("B", rowIndex, $"=B{pointsRow}/B{ticketsRow}", overviewSheetData, FormatOptions.Number, true);
+                InsertCellInWorksheet("C", rowIndex, $"=C{pointsRow}/C{ticketsRow}", overviewSheetData, FormatOptions.Number, true);
+                InsertCellInWorksheet("D", rowIndex, $"=D{pointsRow}/D{ticketsRow}", overviewSheetData, FormatOptions.Number, true);
 
                 //Create Per Developer Breakdown Worksheet
                 rowIndex = 1;
@@ -150,7 +148,7 @@ namespace work_charts
                     InsertCellInWorksheet("J", rowIndex, "Story %", devBreakdownSheetData, FormatOptions.String);
                     rowIndex++;
                     //Ticket Counts
-                    InsertCellInWorksheet("B", rowIndex, searchResponse.GetTicketCount(accountId: engineer.accountId).ToString(), devBreakdownSheetData, FormatOptions.Number);
+                    InsertCellInWorksheet("B", rowIndex, $"=SUM(C{rowIndex}:F{rowIndex})", devBreakdownSheetData, FormatOptions.Number, true);
                     InsertCellInWorksheet("C", rowIndex, searchResponse.GetTicketCount(maintenance, engineer.accountId).ToString(), devBreakdownSheetData, FormatOptions.Number);
                     InsertCellInWorksheet("D", rowIndex, searchResponse.GetTicketCount(bug, engineer.accountId).ToString(), devBreakdownSheetData, FormatOptions.Number);
                     InsertCellInWorksheet("E", rowIndex, searchResponse.GetTicketCount(task, engineer.accountId).ToString(), devBreakdownSheetData, FormatOptions.Number);
@@ -173,7 +171,7 @@ namespace work_charts
                     InsertCellInWorksheet("J", rowIndex, "Story %", devBreakdownSheetData, FormatOptions.String);
                     rowIndex++;
                     //Points
-                    InsertCellInWorksheet("B", rowIndex, searchResponse.GetPointTotal(accountId: engineer.accountId).ToString(), devBreakdownSheetData, FormatOptions.Number);
+                    InsertCellInWorksheet("B", rowIndex, $"=SUM(C{rowIndex}:F{rowIndex})", devBreakdownSheetData, FormatOptions.Number, true);
                     InsertCellInWorksheet("C", rowIndex, searchResponse.GetPointTotal(maintenance, engineer.accountId).ToString(), devBreakdownSheetData, FormatOptions.Number);
                     InsertCellInWorksheet("D", rowIndex, searchResponse.GetPointTotal(bug, engineer.accountId).ToString(), devBreakdownSheetData, FormatOptions.Number);
                     InsertCellInWorksheet("E", rowIndex, searchResponse.GetPointTotal(task, engineer.accountId).ToString(), devBreakdownSheetData, FormatOptions.Number);
@@ -186,7 +184,6 @@ namespace work_charts
                     rowIndex++;
                 }
             }
-            //TODO: Add sheet with the query and date run at the end
         }
 
         public void GenerateWeeklySummary(JiraSearchResponse searchResponse, List<User> engineers, DateTime startDate, DateTime endDate, string xlsxOutputPath) 
