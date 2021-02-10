@@ -13,7 +13,8 @@ namespace work_charts
             var jqlQueries = Directory.GetFiles(@".\Queries", "*.jql");
             string[] reports = {
                 "Summary",
-                "WeeklyBreakdown"
+                "WeeklyBreakdown",
+                "TeamOutput"
             };
 
             //pick report and query in order
@@ -33,8 +34,8 @@ namespace work_charts
                 }
             }
             var reporter = new JiraReporter();
-            var xlsxOutputPath = Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop),
-                $"{Path.GetFileNameWithoutExtension(requestedQuery)}-{requestedReport}-{DateTime.Now.ToString("yyyy-MM-ddTHHmm-ss")}.xlsx");
+            var outputPath = Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop),
+                $"{Path.GetFileNameWithoutExtension(requestedQuery)}-{requestedReport}-{DateTime.Now.ToString("yyyy-MM-ddTHHmm-ss")}");
             var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(requestedQuery));
             var searchResult = await JiraConnector.Instance.GetSearchResults(jqlRestRequest);
             var engineeringGroup = await JiraConnector.Instance.GetGroup(new JiraGroupRequest("engineers")); 
@@ -44,15 +45,20 @@ namespace work_charts
             {
                 case "Summary":
                     reporter.GenerateTicketListSummary(searchResult, engineers,
-                        Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), xlsxOutputPath), jqlRestRequest.jql);
+                        Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath), jqlRestRequest.jql);
+                    break;
+                case "TeamOutput":
+                    outputPath = Path.ChangeExtension(outputPath, "csv");
+                    reporter.GenerateTeamOutputReport(searchResult, engineers, 
+                        Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
                     break;
                 case "WeeklyBreakdown":
                 default:
-                    reporter.GenerateWeeklySummary(searchResult, engineers, DateTime.Today.AddDays(-7), DateTime.Today,
-                        Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), xlsxOutputPath));
+                    reporter.GenerateTimespanBreakdown(searchResult, engineers, DateTime.Today.AddDays(-7), DateTime.Today,
+                        Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
                     break;
             }
-            Console.WriteLine($"Report generated: {xlsxOutputPath}");
+            Console.WriteLine($"Report generated: {outputPath}");
         }
 
         private static string selectReport(string[] reports)
@@ -81,7 +87,7 @@ namespace work_charts
                 {
                     return null;
                 }
-                if (Int32.TryParse(keyPress, out selection) && selection > 0 && selection < reports.Length)
+                if (Int32.TryParse(keyPress, out selection) && selection > 0 && selection <= reports.Length)
                 {
                     return reports[selection - 1];
                 }

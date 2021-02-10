@@ -1,0 +1,5 @@
+project = smart 
+AND (status changed to Done during (-70d, 0d))
+AND status in ("Done") 
+AND (resolution = Done) 
+AND type NOT IN (Sub-task, Epic)

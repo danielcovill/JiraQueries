@@ -4,8 +4,10 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Drawing.Charts;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
+using CsvHelper;
 
 namespace work_charts
 {
@@ -52,7 +54,6 @@ namespace work_charts
                 var overviewSheetData = rollupWorksheet.GetFirstChild<SheetData>();
 
                 uint rowIndex = 1;
-                var totalPts = searchResponse.GetPointTotal();
                 var maintTicketCount = searchResponse.GetTicketCount(maintenance);
                 var maintTicketPts = searchResponse.GetPointTotal(maintenance);
                 var bugTicketCount = searchResponse.GetTicketCount(bug);
@@ -86,7 +87,7 @@ namespace work_charts
                 InsertCellInWorksheet("H", rowIndex, $"=C{rowIndex}/SUM(A{rowIndex}:D{rowIndex})", overviewSheetData, FormatOptions.Percent, true);
                 InsertCellInWorksheet("I", rowIndex, $"=D{rowIndex}/SUM(A{rowIndex}:D{rowIndex})", overviewSheetData, FormatOptions.Percent, true);
 
-                rowIndex+=2;
+                rowIndex += 2;
                 InsertCellInWorksheet("A", rowIndex, "Points", overviewSheetData, FormatOptions.String);
 
                 rowIndex++;
@@ -111,7 +112,7 @@ namespace work_charts
                 InsertCellInWorksheet("H", rowIndex, $"=C{rowIndex}/SUM(A{rowIndex}:D{rowIndex})", overviewSheetData, FormatOptions.Percent, true);
                 InsertCellInWorksheet("I", rowIndex, $"=D{rowIndex}/SUM(A{rowIndex}:D{rowIndex})", overviewSheetData, FormatOptions.Percent, true);
 
-                rowIndex+=2;
+                rowIndex += 2;
                 InsertCellInWorksheet("A", rowIndex, "Averages", overviewSheetData, FormatOptions.String);
 
                 rowIndex++;
@@ -125,6 +126,54 @@ namespace work_charts
                 InsertCellInWorksheet("B", rowIndex, $"=B{pointsRow}/B{ticketsRow}", overviewSheetData, FormatOptions.Number, true);
                 InsertCellInWorksheet("C", rowIndex, $"=C{pointsRow}/C{ticketsRow}", overviewSheetData, FormatOptions.Number, true);
                 InsertCellInWorksheet("D", rowIndex, $"=D{pointsRow}/D{ticketsRow}", overviewSheetData, FormatOptions.Number, true);
+
+                //Add a pie chart showing the ratio of tickets by type (ttr = TicketTypeRatio)
+                var chartTitle = "Ticket Type Ratio";
+
+                //cell reference, value
+                DrawingsPart ttrDrawingPart = rollupWorksheet.WorksheetPart.AddNewPart<DrawingsPart>();
+                var rollupWorksheetPart = rollupWorksheet.WorksheetPart;
+                rollupWorksheetPart.Worksheet.Append(new DocumentFormat.OpenXml.Spreadsheet.Drawing()
+                {
+                    Id = rollupWorksheet.WorksheetPart.GetIdOfPart(ttrDrawingPart)
+                });
+                rollupWorksheetPart.Worksheet.Save();
+                ChartPart ttrChartPart = ttrDrawingPart.AddNewPart<ChartPart>();
+                ttrChartPart.ChartSpace = new ChartSpace();
+                ttrChartPart.ChartSpace.Append(new EditingLanguage() { Val = new StringValue("en-US") });
+
+                Chart ttrChart = ttrChartPart.ChartSpace.AppendChild<Chart>(new Chart());
+                PlotArea ttrPlotArea = ttrChart.AppendChild<PlotArea>(new PlotArea());
+                Layout ttrLayout = ttrPlotArea.AppendChild<Layout>(new Layout());
+                PieChart ttrPieChart = ttrPlotArea.AppendChild<PieChart>(new PieChart(/*Maybe something needs to be here?*/));
+                PieChartSeries ttrPieChartSeries = ttrPieChart.AppendChild<PieChartSeries>(
+                    new PieChartSeries(
+                        new DocumentFormat.OpenXml.Drawing.Charts.Index()
+                        {
+                            Val = 1U
+                        }
+                    )
+                );
+
+
+                // Iterate through the data we want in the pie chart
+                // StringLiteral strLit = ttrPieChartSeries.AppendChild<CategoryAxisData>(
+                //     new CategoryAxisData()).AppendChild<StringLiteral>(new StringLiteral()
+                // );
+                // strLit.Append(new PointCount() { Val = 1U });
+                // strLit.AppendChild<StringPoint>(new StringPoint() 
+                // { 
+                //     Index = 0U 
+                // }).Append(new NumericValue(chartTitle));
+                // NumberReference numRef = ttrPieChartSeries
+                //     .AppendChild<DocumentFormat.OpenXml.Drawing.Charts.Values>(new DocumentFormat.OpenXml.Drawing.Charts.Values())
+                //     .AppendChild<NumberReference>(new NumberReference());
+                // numRef.Append(new FormatCode("General"));
+                // numRef.Append(new PointCount() { Val = 1U });
+                // numRef.AppendChild<NumericPoint>(new NumericPoint() { Index = 0U }).Append(new NumericValue(data[key].ToString()));
+
+                //Add a pie chart showing the ratio of points by type
+
 
                 //Create Per Developer Breakdown Worksheet
                 rowIndex = 1;
@@ -195,7 +244,27 @@ namespace work_charts
             }
         }
 
-        public void GenerateWeeklySummary(JiraSearchResponse searchResponse, List<User> engineers, DateTime startDate, DateTime endDate, string xlsxOutputPath) 
+        public void GenerateTeamOutputReport(JiraSearchResponse searchResponse, List<User> engineers, string csvOutputPath)
+        {
+            var results = new List<EngineerOutputReport>();
+            foreach (var engineer in engineers)
+            {
+                results.Add(new EngineerOutputReport()
+                {
+                    Name = engineer.displayName,
+                    TenWeekAveragePoints = searchResponse.GetPointTotal(null, engineer.accountId, DateTime.Now.AddDays(-70), DateTime.Now) / 10,
+                    TwoWeekAveragePoints = searchResponse.GetPointTotal(null, engineer.accountId, DateTime.Now.AddDays(-14), DateTime.Now) / 2,
+                    PriorWeekPoints = searchResponse.GetPointTotal(null, engineer.accountId, DateTime.Now.AddDays(-7), DateTime.Now)
+                });
+            }
+            using (var writer = new StreamWriter(csvOutputPath))
+            using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+            {
+                csv.WriteRecords(results);
+            }
+        }
+
+        public void GenerateTimespanBreakdown(JiraSearchResponse searchResponse, List<User> engineers, DateTime startDate, DateTime endDate, string xlsxOutputPath)
         {
             throw new NotImplementedException();
         }
@@ -309,7 +378,7 @@ namespace work_charts
 
             //add a sheets section if one doesn't already exist
             Sheets sheets = spreadsheetDocument.WorkbookPart.Workbook.GetFirstChild<Sheets>();
-            if(sheets == null)
+            if (sheets == null)
             {
                 sheets = spreadsheetDocument.WorkbookPart.Workbook.AppendChild<Sheets>(new Sheets());
             }

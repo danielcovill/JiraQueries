@@ -431,7 +431,7 @@ namespace work_charts
             }
             return resultCollection.Count();
         }
-        public double GetPointTotal(string ticketType = null, string accountId = null)
+        public double GetPointTotal(string ticketType = null, string accountId = null, DateTime? resolvedStartDate = null, DateTime? resolvedEndDate = null)
         { 
             var resultCollection = issues.AsQueryable();
             if(ticketType != null)
@@ -440,9 +440,18 @@ namespace work_charts
             }
             if(accountId != null)
             {
-                resultCollection = resultCollection.Where(issue => issue.fields.assignee.accountId == accountId);
+                resultCollection = resultCollection.Where(issue => issue.fields.assignee != null && issue.fields.assignee.accountId == accountId);
             }
-            return resultCollection.Sum(issue => issue.fields.storyPoints) ?? 0;
+            if(resolvedStartDate != null)
+            {
+                resultCollection = resultCollection.Where(issue => issue.fields.resolutiondate.HasValue && DateTime.Compare(issue.fields.resolutiondate.Value, resolvedStartDate.Value) > 0);
+            }
+            if(resolvedEndDate != null)
+            {
+                resultCollection = resultCollection.Where(issue => issue.fields.resolutiondate.HasValue && DateTime.Compare(issue.fields.resolutiondate.Value, resolvedEndDate.Value) < 0);
+            }
+            var count = resultCollection.Count();
+            return resultCollection.Select(issue => issue.fields).Sum(field => field.storyPoints).Value;
         }
     }
 }

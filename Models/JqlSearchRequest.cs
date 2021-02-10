@@ -17,7 +17,7 @@ namespace work_charts
             string[] properties = null,
             bool fieldsByKeys = false,
             int startAt = 0,
-            int maxResults = 300)
+            int maxResults = 100)
         {
             this.jql = query;
             this.startAt = startAt;
@@ -36,6 +36,7 @@ namespace work_charts
                 , "resolved"
                 , "components"
                 , "creator"
+                , "resolutiondate"
             };
             this.validateQuery = validateQuery;
             this.expand = expand;
