@@ -1,6 +1,0 @@
-project = smart 
-AND type not in (Epic, Sub-task) 
-AND status changed before -3d 
-AND NOT status changed after -3d 
-AND status not in (Done, Backlog, "Selected for Development", "User Review") 
-order by Status

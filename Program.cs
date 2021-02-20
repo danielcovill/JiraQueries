@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace work_charts
@@ -8,72 +10,44 @@ namespace work_charts
     {
         public static async Task Main(string[] args)
         {
-            string requestedQuery = null;
-            string requestedReport = null;
-            var jqlQueries = Directory.GetFiles(@".\Queries", "*.jql");
-            string[] reports = {
-                "Summary",
-                "WeeklyBreakdown",
-                "TeamOutput"
+            var reports = new Dictionary<string, string>()
+            {
+                { "Team Output - 10wk, 2wk, and 1wk output per Engineer", "Done previous 10wk.jql" }
             };
 
-            //pick report and query in order
-            while (requestedReport == null)
-            {
-                if (requestedQuery == null)
-                {
-                    requestedQuery = selectQuery(jqlQueries);
-                }
-                if (requestedReport == null)
-                {
-                    requestedReport = selectReport(reports);
-                    if (requestedReport == null)
-                    {
-                        requestedQuery = null;
-                    }
-                }
-            }
+            var requestedReport = selectReport(reports);
+
             var reporter = new JiraReporter();
             var outputPath = Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop),
-                $"{Path.GetFileNameWithoutExtension(requestedQuery)}-{requestedReport}-{DateTime.Now.ToString("yyyy-MM-ddTHHmm-ss")}");
-            var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(requestedQuery));
+                $"jiraReport-{DateTime.Now.ToString("yyyy-MM-ddTHHmm-ss")}");
+            var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@".\Queries", requestedReport.Value)));
             var searchResult = await JiraConnector.Instance.GetSearchResults(jqlRestRequest);
-            var engineeringGroup = await JiraConnector.Instance.GetGroup(new JiraGroupRequest("engineers")); 
+            var engineeringGroup = await JiraConnector.Instance.GetGroup(new JiraGroupRequest("engineers"));
             var engineers = engineeringGroup.users;
 
-            switch (requestedReport)
+            switch (requestedReport.Key)
             {
-                case "Summary":
-                    reporter.GenerateTicketListSummary(searchResult, engineers,
-                        Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath), jqlRestRequest.jql);
-                    break;
-                case "TeamOutput":
+                case "Team Output - 10wk, 2wk, and 1wk output per Engineer":
                     outputPath = Path.ChangeExtension(outputPath, "csv");
-                    reporter.GenerateTeamOutputReport(searchResult, engineers, 
-                        Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
-                    break;
-                case "WeeklyBreakdown":
-                default:
-                    reporter.GenerateTimespanBreakdown(searchResult, engineers, DateTime.Today.AddDays(-7), DateTime.Today,
+                    reporter.GenerateTeamOutputReport(searchResult, engineers,
                         Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
                     break;
             }
             Console.WriteLine($"Report generated: {outputPath}");
         }
-
-        private static string selectReport(string[] reports)
+        private static KeyValuePair<string,string> selectReport(Dictionary<string, string> reports)
         {
-            if (reports.Length == 0)
+            if (reports.Count == 0)
             {
                 throw new Exception("No reports available");
             }
 
-            Console.WriteLine("Select a report ('q' to exit, 'b' to go back):");
+            Console.WriteLine("Select a report ('q' to exit):");
             var iterator = 0;
             foreach (var report in reports)
             {
                 Console.Write(++iterator + ". ");
-                Console.WriteLine(report);
+                Console.WriteLine(report.Key);
             }
             var selection = 0;
             while (true)
@@ -83,43 +57,9 @@ namespace work_charts
                 {
                     Environment.Exit(0);
                 }
-                if (keyPress == "b")
+                if (Int32.TryParse(keyPress, out selection) && selection > 0 && selection <= reports.Count)
                 {
-                    return null;
-                }
-                if (Int32.TryParse(keyPress, out selection) && selection > 0 && selection <= reports.Length)
-                {
-                    return reports[selection - 1];
-                }
-            }
-        }
-
-        private static string selectQuery(string[] jqlQueries)
-        {
-            if (jqlQueries.Length == 0)
-            {
-                Console.WriteLine("No jql files in the 'Queries' directory. Exiting.");
-                Environment.Exit(0);
-            }
-            while (true)
-            {
-                Console.WriteLine("Select a query ('q' to exit):");
-                int iterator = 0;
-                foreach (var jqlQuery in jqlQueries)
-                {
-                    Console.Write(++iterator + ". ");
-                    Console.WriteLine(Path.GetFileNameWithoutExtension(jqlQuery));
-                }
-                int selection = 0;
-
-                var keyPress = Console.ReadLine();
-                if (keyPress == "q")
-                {
-                    Environment.Exit(0);
-                }
-                if (Int32.TryParse(keyPress, out selection) && selection > 0 && selection < jqlQueries.Length)
-                {
-                    return jqlQueries[selection - 1];
+                    return reports.ElementAt(selection - 1);
                 }
             }
         }
