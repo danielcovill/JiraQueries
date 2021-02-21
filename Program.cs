@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace work_charts
@@ -10,34 +8,58 @@ namespace work_charts
     {
         public static async Task Main(string[] args)
         {
-            var reports = new Dictionary<string, string>()
+            var reports = new string[]
             {
-                { "Team Output - 10wk, 2wk, and 1wk output per Engineer", "Done previous 10wk.jql" }
+                "Team Output - 10wk, 2wk, and 1wk output per Engineer",
+                "Weekly Points Summary - Broken down by work item type",
+                "Bugs Summary - Overview of regressions, escapes, etc.",
             };
 
             var requestedReport = selectReport(reports);
 
             var reporter = new JiraReporter();
             var outputPath = Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop),
-                $"jiraReport-{DateTime.Now.ToString("yyyy-MM-ddTHHmm-ss")}");
-            var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@".\Queries", requestedReport.Value)));
-            var searchResult = await JiraConnector.Instance.GetSearchResults(jqlRestRequest);
-            var engineeringGroup = await JiraConnector.Instance.GetGroup(new JiraGroupRequest("engineers"));
-            var engineers = engineeringGroup.users;
+                $"jiraReport-{DateTime.Now.ToString("yyyy-MM-ddTHHmm-ss")}.csv");
 
-            switch (requestedReport.Key)
+            switch (requestedReport)
             {
                 case "Team Output - 10wk, 2wk, and 1wk output per Engineer":
-                    outputPath = Path.ChangeExtension(outputPath, "csv");
+                {
+                    var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Queries", "Done previous 10wk.jql")));
+                    var searchResult = await JiraConnector.Instance.GetSearchResults(jqlRestRequest);
+                    var engineeringGroup = await JiraConnector.Instance.GetGroup(new JiraGroupRequest("engineers"));
+                    var engineers = engineeringGroup.users;
                     reporter.GenerateTeamOutputReport(searchResult, engineers,
                         Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
                     break;
+                }
+                case "Weekly Points Summary - Broken down by work item type":
+                {
+                    var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Queries", "Done previous 10wk.jql")));
+                    var searchResult = await JiraConnector.Instance.GetSearchResults(jqlRestRequest);
+                    reporter.GenerateWorkSummaryReport(searchResult, 70, 7,
+                        Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
+                    break;
+                }
+                case "Bugs Summary - Overview of regressions, escapes, etc.":
+                {
+                    var jqlBugRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Queries", "Bugs created 10wk.jql")));
+                    var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Queries", "Done previous 10wk.jql")));
+                    var jiraQueries = new Task<JiraSearchResponse>[2] {
+                        JiraConnector.Instance.GetSearchResults(jqlBugRestRequest),
+                        JiraConnector.Instance.GetSearchResults(jqlRestRequest),
+                    };
+                    Task.WaitAll(jiraQueries);
+                    reporter.GenerateBugReport(jiraQueries[0].Result, jiraQueries[1].Result, 70, 7,
+                        Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
+                    break;
+                }
             }
             Console.WriteLine($"Report generated: {outputPath}");
         }
-        private static KeyValuePair<string,string> selectReport(Dictionary<string, string> reports)
+        private static string selectReport(string[] reports)
         {
-            if (reports.Count == 0)
+            if (reports.Length == 0)
             {
                 throw new Exception("No reports available");
             }
@@ -47,7 +69,7 @@ namespace work_charts
             foreach (var report in reports)
             {
                 Console.Write(++iterator + ". ");
-                Console.WriteLine(report.Key);
+                Console.WriteLine(report);
             }
             var selection = 0;
             while (true)
@@ -57,9 +79,9 @@ namespace work_charts
                 {
                     Environment.Exit(0);
                 }
-                if (Int32.TryParse(keyPress, out selection) && selection > 0 && selection <= reports.Count)
+                if (Int32.TryParse(keyPress, out selection) && selection > 0 && selection <= reports.Length)
                 {
-                    return reports.ElementAt(selection - 1);
+                    return reports[selection - 1];
                 }
             }
         }

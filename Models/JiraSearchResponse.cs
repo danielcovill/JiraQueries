@@ -418,21 +418,14 @@ namespace work_charts
         public List<Issue> issues { get; set; } 
         public List<string> warningMessages { get; set; } 
         public Names names { get; set; } 
-        public int GetTicketCount(string ticketType = null, string accountId = null)
-        { 
-            var resultCollection = issues.AsQueryable();
-            if(ticketType != null) 
-            {
-                resultCollection = resultCollection.Where(issue => issue.fields.issuetype.name == ticketType);
-            }
-            if(accountId != null)
-            {
-                resultCollection = resultCollection.Where(issue => issue.fields.assignee.accountId == accountId);
-            }
-            return resultCollection.Count();
-        }
-        public double GetPointTotal(string ticketType = null, string accountId = null, DateTime? resolvedStartDate = null, DateTime? resolvedEndDate = null)
-        { 
+        public IQueryable<Issue> GetTickets(
+            string accountId = null, 
+            DateTime? createdStartDate = null, 
+            DateTime? createdEndDate = null, 
+            DateTime? resolvedStartDate = null, 
+            DateTime? resolvedEndDate = null, 
+            string ticketType = null)
+        {
             var resultCollection = issues.AsQueryable();
             if(ticketType != null)
             {
@@ -442,6 +435,14 @@ namespace work_charts
             {
                 resultCollection = resultCollection.Where(issue => issue.fields.assignee != null && issue.fields.assignee.accountId == accountId);
             }
+            if(createdStartDate != null)
+            {
+                resultCollection = resultCollection.Where(issue => DateTime.Compare(issue.fields.created, createdStartDate.Value) > 0);
+            }
+            if(createdEndDate != null)
+            {
+                resultCollection = resultCollection.Where(issue => DateTime.Compare(issue.fields.created, createdEndDate.Value) < 0);
+            }
             if(resolvedStartDate != null)
             {
                 resultCollection = resultCollection.Where(issue => issue.fields.resolutiondate.HasValue && DateTime.Compare(issue.fields.resolutiondate.Value, resolvedStartDate.Value) > 0);
@@ -450,8 +451,7 @@ namespace work_charts
             {
                 resultCollection = resultCollection.Where(issue => issue.fields.resolutiondate.HasValue && DateTime.Compare(issue.fields.resolutiondate.Value, resolvedEndDate.Value) < 0);
             }
-            var count = resultCollection.Count();
-            return resultCollection.Select(issue => issue.fields).Sum(field => field.storyPoints).Value;
+            return resultCollection;
         }
     }
 }

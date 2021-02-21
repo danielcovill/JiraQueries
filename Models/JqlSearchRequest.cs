@@ -36,7 +36,9 @@ namespace work_charts
                 , "resolved"
                 , "components"
                 , "creator"
+                , "environment"
                 , "resolutiondate"
+                , "customfield_10031" // Regressions which is a list of regression objects with key "IsRegression"
             };
             this.validateQuery = validateQuery;
             this.expand = expand;

@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using CsvHelper;
+using work_charts.Models;
 
 namespace work_charts
 {
@@ -16,10 +17,57 @@ namespace work_charts
 
         }
         /// <summary>
-        /// Gets a breakdown of ticket counts, points, and ratios among ticket types for a given list of tickets
+        /// Gives a per work item, per timespan breakdown of points completed
         /// </summary>
-        /// <param name="issues">The list of issues over which to compute</param>
-        /// <param name="xlsxOutputPath">If included output creates an xlsx document at the specified path. Otherwise output goes to the console.</param>
+        public void GenerateWorkSummaryReport(JiraSearchResponse searchResponse, int daysOfHistory, int daysPerTimespan, string csvOutputPath)
+        {
+            var results = new List<PointsByCategoryByTimespanReport>();
+            var spanEnd = DateTime.Today;
+            while (daysOfHistory > 0)
+            {
+                results.Add(new PointsByCategoryByTimespanReport()
+                {
+                    StartDate = spanEnd.AddDays(-daysPerTimespan),
+                    EndDate = spanEnd,
+                    BugPoints = Convert.ToInt32(searchResponse.GetTickets(
+                        ticketType: "Bug",
+                        resolvedStartDate: spanEnd.AddDays(-7),
+                        resolvedEndDate: spanEnd)
+                            .Select(issue => issue.fields)
+                            .Sum(field => field.storyPoints).Value),
+                    MaintenancePoints = Convert.ToInt32(searchResponse.GetTickets(
+                        ticketType: "Maintenance",
+                        resolvedStartDate: spanEnd.AddDays(-7),
+                        resolvedEndDate: spanEnd)
+                            .Select(issue => issue.fields)
+                            .Sum(field => field.storyPoints).Value),
+                    StoryPoints = Convert.ToInt32(searchResponse.GetTickets(
+                        ticketType: "Story",
+                        resolvedStartDate: spanEnd.AddDays(-7),
+                        resolvedEndDate: spanEnd)
+                            .Select(issue => issue.fields)
+                            .Sum(field => field.storyPoints).Value),
+                    TaskPoints = Convert.ToInt32(searchResponse.GetTickets(
+                        ticketType: "Task",
+                        resolvedStartDate: spanEnd.AddDays(-7),
+                        resolvedEndDate: spanEnd)
+                            .Select(issue => issue.fields)
+                            .Sum(field => field.storyPoints).Value),
+                });
+                spanEnd = spanEnd.AddDays(-daysPerTimespan);
+                daysOfHistory -= daysPerTimespan;
+            }
+            using (var writer = new StreamWriter(csvOutputPath))
+            using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+            {
+                csv.WriteRecords(results.OrderBy(x => x.EndDate));
+            }
+        }
+
+        /// <summary>
+        /// Gives a per-engineer summary of points completed over the last 10 weeks by providing 10 and 2 week averages as
+        /// well as respective point totals for the previous week
+        /// </summary>
         public void GenerateTeamOutputReport(JiraSearchResponse searchResponse, List<User> engineers, string csvOutputPath)
         {
             var results = new List<EngineerOutputReport>();
@@ -28,9 +76,24 @@ namespace work_charts
                 results.Add(new EngineerOutputReport()
                 {
                     Name = engineer.displayName,
-                    TenWeekAveragePoints = searchResponse.GetPointTotal(null, engineer.accountId, DateTime.Now.AddDays(-70), DateTime.Now) / 10,
-                    TwoWeekAveragePoints = searchResponse.GetPointTotal(null, engineer.accountId, DateTime.Now.AddDays(-14), DateTime.Now) / 2,
-                    PriorWeekPoints = searchResponse.GetPointTotal(null, engineer.accountId, DateTime.Now.AddDays(-7), DateTime.Now)
+                    TenWeekAveragePoints = searchResponse.GetTickets(
+                        accountId: engineer.accountId,
+                        resolvedStartDate: DateTime.Now.AddDays(-70),
+                        resolvedEndDate: DateTime.Now)
+                            .Select(issue => issue.fields)
+                            .Sum(field => field.storyPoints).Value / 10,
+                    TwoWeekAveragePoints = searchResponse.GetTickets(
+                        accountId: engineer.accountId,
+                        resolvedStartDate: DateTime.Now.AddDays(-14),
+                        resolvedEndDate: DateTime.Now)
+                            .Select(issue => issue.fields)
+                            .Sum(field => field.storyPoints).Value / 2,
+                    PriorWeekPoints = searchResponse.GetTickets(
+                        accountId: engineer.accountId,
+                        resolvedStartDate: DateTime.Now.AddDays(-4),
+                        resolvedEndDate: DateTime.Now)
+                            .Select(issue => issue.fields)
+                            .Sum(field => field.storyPoints).Value
                 });
             }
             using (var writer = new StreamWriter(csvOutputPath))
@@ -40,6 +103,41 @@ namespace work_charts
             }
         }
 
+        public void GenerateBugReport(JiraSearchResponse bugSearchResponse, JiraSearchResponse allSearchResponse, int daysOfHistory, int daysPerTimespan, string csvOutputPath)
+        {
+            var results = new List<BugsReport>();
+            var spanEnd = DateTime.Today;
+            while (daysOfHistory > 0)
+            {
+                var createdBugsCollection = bugSearchResponse.GetTickets(
+                    createdStartDate: spanEnd.AddDays(-daysPerTimespan),
+                    createdEndDate: spanEnd);
+                var createdBugsCount = createdBugsCollection.Count();
+                var completedTicketCount = allSearchResponse.GetTickets(
+                    resolvedStartDate: spanEnd.AddDays(-daysPerTimespan),
+                    resolvedEndDate: spanEnd).Count();
+                var escapedBugCount = createdBugsCollection.Where(bug =>
+                    bug.fields.environment != null && bug.fields.environment.Contains("production", StringComparison.InvariantCultureIgnoreCase) ||
+                    bug.fields.environment != null && bug.fields.environment.Contains("all", StringComparison.InvariantCultureIgnoreCase) ||
+                    bug.fields.environment != null && bug.fields.environment.Contains("prod", StringComparison.InvariantCultureIgnoreCase)).Count();
 
+                results.Add(new BugsReport()
+                {
+                    StartDate = spanEnd.AddDays(-daysPerTimespan),
+                    EndDate = spanEnd,
+                    BugsEscaped = escapedBugCount,
+                    BugsCaught = createdBugsCount - escapedBugCount,
+                    BugsPerTicket = (double)createdBugsCount / completedTicketCount,
+                    Regressions = createdBugsCollection.Where(bug => bug.fields.regressions != null && bug.fields.regressions.Any(regression => regression.value.Equals("Is Regression"))).Count(),
+                });
+                spanEnd = spanEnd.AddDays(-daysPerTimespan);
+                daysOfHistory -= daysPerTimespan;
+            }
+            using (var writer = new StreamWriter(csvOutputPath))
+            using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+            {
+                csv.WriteRecords(results.OrderBy(x => x.EndDate));
+            }
+        }
     }
 }
