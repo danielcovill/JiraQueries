@@ -116,6 +116,9 @@ namespace work_charts
                 var completedTicketCount = allSearchResponse.GetTickets(
                     resolvedStartDate: spanEnd.AddDays(-daysPerTimespan),
                     resolvedEndDate: spanEnd).Count();
+                var completedTicketPoints = allSearchResponse.GetTickets(
+                    resolvedStartDate: spanEnd.AddDays(-daysPerTimespan),
+                    resolvedEndDate: spanEnd).Where(ticket => ticket.fields.storyPoints != null).Sum(ticket => ticket.fields.storyPoints).Value;
                 var escapedBugCount = createdBugsCollection.Where(bug =>
                     bug.fields.environment != null && bug.fields.environment.Contains("production", StringComparison.InvariantCultureIgnoreCase) ||
                     bug.fields.environment != null && bug.fields.environment.Contains("all", StringComparison.InvariantCultureIgnoreCase) ||
@@ -128,6 +131,7 @@ namespace work_charts
                     BugsEscaped = escapedBugCount,
                     BugsCaught = createdBugsCount - escapedBugCount,
                     BugsPerTicket = (double)createdBugsCount / completedTicketCount,
+                    BugsPerPoint = (double)createdBugsCount / completedTicketPoints,
                     Regressions = createdBugsCollection.Where(bug => bug.fields.regressions != null && bug.fields.regressions.Any(regression => regression.value.Equals("Is Regression"))).Count(),
                 });
                 spanEnd = spanEnd.AddDays(-daysPerTimespan);

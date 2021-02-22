@@ -15,6 +15,8 @@ namespace work_charts.Models
         [CsvHelper.Configuration.Attributes.Index(3)]
         public double BugsPerTicket { get; set; }
         [CsvHelper.Configuration.Attributes.Index(4)]
+        public double BugsPerPoint {get; set; }
+        [CsvHelper.Configuration.Attributes.Index(5)]
         public int Regressions { get; internal set; }
         [CsvHelper.Configuration.Attributes.Index(0)]
         public string DateRange
