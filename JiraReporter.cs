@@ -90,7 +90,7 @@ namespace work_charts
                             .Sum(field => field.storyPoints).Value / 2,
                     PriorWeekPoints = searchResponse.GetTickets(
                         accountId: engineer.accountId,
-                        resolvedStartDate: DateTime.Now.AddDays(-4),
+                        resolvedStartDate: DateTime.Now.AddDays(-7),
                         resolvedEndDate: DateTime.Now)
                             .Select(issue => issue.fields)
                             .Sum(field => field.storyPoints).Value
@@ -141,6 +141,33 @@ namespace work_charts
             using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
             {
                 csv.WriteRecords(results.OrderBy(x => x.EndDate));
+            }
+        }
+
+        public void GenerateStalledReport(JiraSearchResponse stalledSearchResponse, string csvOutputPath) 
+        {
+            var results = stalledSearchResponse.issues.Select(ticket => new StalledTicket() {
+                Assignee = ticket.fields.assignee != null ? ticket.fields.assignee.displayName : "",
+                Created = ticket.fields.created,
+                Creator = ticket.fields.creator.displayName,
+                DaysStalled = (int)(DateTime.Now - ticket.fields.updated).TotalDays,
+                Description = ticket.fields.description,
+                Epic = ticket.fields.epicLink,
+                Link = $"https://smartwyre.atlassian.net/browse/{ticket.key}",
+                Id = ticket.key,
+                IsRegression = (ticket.fields.regressions != null && ticket.fields.regressions.Any(regression => regression.value.Equals("Is Regression"))),
+                Status = ticket.fields.status.name,
+                StoryPoints = ticket.fields.storyPoints.HasValue ? (int)ticket.fields.storyPoints.Value : 0,
+                Summary = ticket.fields.summary,
+                Type = ticket.fields.issuetype.name,
+                Updated = ticket.fields.updated,
+                UpdatedBy = "not implemented",//TODO: Implement me
+            });
+            
+            using (var writer = new StreamWriter(csvOutputPath))
+            using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+            {
+                csv.WriteRecords(results);
             }
         }
     }

@@ -33,11 +33,13 @@ namespace work_charts
                 , "status"
                 , "resolution"
                 , "created"
+                , "description"
                 , "resolved"
                 , "components"
                 , "creator"
                 , "environment"
                 , "resolutiondate"
+                , "updated"
                 , "customfield_10031" // Regressions which is a list of regression objects with key "IsRegression"
             };
             this.validateQuery = validateQuery;
