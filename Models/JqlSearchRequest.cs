@@ -33,7 +33,7 @@ namespace work_charts
                 , "status"
                 , "resolution"
                 , "created"
-                , "description"
+                // , "description" Don't need this for now
                 , "resolved"
                 , "components"
                 , "creator"

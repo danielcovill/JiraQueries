@@ -15,56 +15,58 @@ namespace work_charts
                 "Bugs Summary - Overview of regressions, escapes, etc.",
                 "Stalled Summary - Overview of stalled and blocked tickets"
             };
-
-            var requestedReport = selectReport(reports);
-
-            var reporter = new JiraReporter();
-            var outputPath = Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop),
-                $"jiraReport-{DateTime.Now.ToString("yyyy-MM-ddTHHmm-ss")}.csv");
-
-            switch (requestedReport)
+            while (true)
             {
-                case "Team Output - 10wk, 2wk, and 1wk output per Engineer":
+                var requestedReport = selectReport(reports);
+
+                var reporter = new JiraReporter();
+                var outputPath = Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop),
+                    $"jiraReport-{DateTime.Now.ToString("yyyy-MM-ddTHHmm-ss")}.csv");
+
+                switch (requestedReport)
                 {
-                    var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Queries", "Done previous 10wk.jql")));
-                    var searchResult = await JiraConnector.Instance.GetSearchResults(jqlRestRequest);
-                    var engineeringGroup = await JiraConnector.Instance.GetGroup(new JiraGroupRequest("engineers"));
-                    var engineers = engineeringGroup.users;
-                    reporter.GenerateTeamOutputReport(searchResult, engineers,
-                        Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
-                    break;
-                }
-                case "Weekly Points Summary - Broken down by work item type":
-                {
-                    var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Queries", "Done previous 10wk.jql")));
-                    var searchResult = await JiraConnector.Instance.GetSearchResults(jqlRestRequest);
-                    reporter.GenerateWorkSummaryReport(searchResult, 70, 7,
-                        Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
-                    break;
-                }
-                case "Bugs Summary - Overview of regressions, escapes, etc.":
-                {
-                    var jqlBugRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Queries", "Bugs created 10wk.jql")));
-                    var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Queries", "Done previous 10wk.jql")));
-                    var jiraQueries = new Task<JiraSearchResponse>[2] {
+                    case "Team Output - 10wk, 2wk, and 1wk output per Engineer":
+                        {
+                            var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Queries", "Done previous 10wk.jql")));
+                            var searchResult = await JiraConnector.Instance.GetSearchResults(jqlRestRequest);
+                            var engineeringGroup = await JiraConnector.Instance.GetGroup(new JiraGroupRequest("engineers"));
+                            var engineers = engineeringGroup.users;
+                            reporter.GenerateTeamOutputReport(searchResult, engineers,
+                                Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
+                            break;
+                        }
+                    case "Weekly Points Summary - Broken down by work item type":
+                        {
+                            var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Queries", "Done previous 10wk.jql")));
+                            var searchResult = await JiraConnector.Instance.GetSearchResults(jqlRestRequest);
+                            reporter.GenerateWorkSummaryReport(searchResult, 70, 7,
+                                Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
+                            break;
+                        }
+                    case "Bugs Summary - Overview of regressions, escapes, etc.":
+                        {
+                            var jqlBugRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Queries", "Bugs created 10wk.jql")));
+                            var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Queries", "Done previous 10wk.jql")));
+                            var jiraQueries = new Task<JiraSearchResponse>[2] {
                         JiraConnector.Instance.GetSearchResults(jqlBugRestRequest),
                         JiraConnector.Instance.GetSearchResults(jqlRestRequest),
                     };
-                    Task.WaitAll(jiraQueries);
-                    reporter.GenerateBugReport(jiraQueries[0].Result, jiraQueries[1].Result, 70, 7,
-                        Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
-                    break;
+                            Task.WaitAll(jiraQueries);
+                            reporter.GenerateBugReport(jiraQueries[0].Result, jiraQueries[1].Result, 70, 7,
+                                Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
+                            break;
+                        }
+                    case "Stalled Summary - Overview of stalled and blocked tickets":
+                        {
+                            var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Queries", "Blocked and Stalled.jql")));
+                            var searchResult = await JiraConnector.Instance.GetSearchResults(jqlRestRequest);
+                            reporter.GenerateStalledReport(searchResult,
+                                Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
+                            break;
+                        }
                 }
-                case "Stalled Summary - Overview of stalled and blocked tickets":
-                {
-                    var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Queries", "Blocked and Stalled.jql")));
-                    var searchResult = await JiraConnector.Instance.GetSearchResults(jqlRestRequest);
-                    reporter.GenerateStalledReport(searchResult,
-                        Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
-                    break;
-                }
+                Console.WriteLine($"Report generated: {outputPath}");
             }
-            Console.WriteLine($"Report generated: {outputPath}");
         }
         private static string selectReport(string[] reports)
         {

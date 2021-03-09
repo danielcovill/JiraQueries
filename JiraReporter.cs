@@ -151,7 +151,6 @@ namespace work_charts
                 Created = ticket.fields.created,
                 Creator = ticket.fields.creator.displayName,
                 DaysStalled = (int)(DateTime.Now - ticket.fields.updated).TotalDays,
-                Description = ticket.fields.description,
                 Epic = ticket.fields.epicLink,
                 Link = $"https://smartwyre.atlassian.net/browse/{ticket.key}",
                 Id = ticket.key,

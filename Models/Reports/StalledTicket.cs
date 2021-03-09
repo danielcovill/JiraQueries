@@ -18,6 +18,5 @@ namespace work_charts.Models
         public int StoryPoints { get; set; }
         public bool IsRegression { get; set; }
         public string Epic { get; set; }
-        public string Description { get; set; }
     }
 }
