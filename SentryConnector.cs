@@ -37,9 +37,8 @@ namespace work_charts
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", configuration["sentryApiKey"]);
         }
 
-        public async Task<Dictionary<DateTime, int>> GetEventFrequency(SentryRequest request) 
+        public async Task<List<KeyValuePair<DateTime, int>>> GetEventFrequency(SentryRequest request) 
         {
-            var result = new Dictionary<DateTime, int>();
             var requestString = new StringBuilder("events-stats/");
             requestString.Append($"?query={Uri.EscapeUriString(request.query)}");
             requestString.Append($"&interval={Uri.EscapeUriString(request.interval)}");
@@ -52,9 +51,8 @@ namespace work_charts
             
             var response = await client.GetAsync(requestString.ToString());
             response.EnsureSuccessStatusCode();
-            string x = await response.Content.ReadAsStringAsync();
-            var stupidResult = System.Text.Json.JsonSerializer.Deserialize<SentryEventFrequencyResponse>(x);
-            return result;
+            var result = System.Text.Json.JsonSerializer.Deserialize<SentryEventFrequencyResponse>(await response.Content.ReadAsByteArrayAsync());
+            return result.Records;
         }
     }
 }

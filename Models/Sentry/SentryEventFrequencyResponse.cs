@@ -17,7 +17,7 @@ namespace work_charts.Models.Sentry
                 {
                     return null;
                 }
-                return Records.Select(r => new object[] { r.Date, r.EventCount}).ToArray();
+                return Records.Select(r => new object[] { r.Key, r.Value }).ToArray();
             }
             set
             {
@@ -25,23 +25,14 @@ namespace work_charts.Models.Sentry
                 {
                     return;
                 }
-                Records = value.Select(a => new SentryDateEventCount
-                {
-                    Date = DateTimeOffset.FromUnixTimeSeconds(((JsonElement)a[0]).GetInt64()).UtcDateTime,
-                    EventCount = ((JsonElement)a[1]).EnumerateArray().ToList()[0].GetProperty("count").GetInt32()
-                }).ToList();
+                Records = value.Select(a => new KeyValuePair<DateTime, int>(
+                    DateTimeOffset.FromUnixTimeSeconds(((JsonElement)a[0]).GetInt64()).UtcDateTime,
+                    ((JsonElement)a[1]).EnumerateArray().ToList()[0].GetProperty("count").GetInt32()
+                )).ToList();
             }
         }
 
-        public List<SentryDateEventCount> Records { get; set; }
+        public List<KeyValuePair<DateTime, int>> Records { get; set; }
 
-    }
-    public class SentryDateEventCount
-    {
-        public DateTime Date { get; set; }
-        public int EventCount { get; set; }
-    }
-    public class SentryCount {
-        public int count { get; set; }
     }
 }
