@@ -54,5 +54,21 @@ namespace work_charts
             var result = System.Text.Json.JsonSerializer.Deserialize<SentryEventFrequencyResponse>(await response.Content.ReadAsByteArrayAsync());
             return result.Records;
         }
+
+        public async Task<SentryFrequentEvent[]> GetFrequentEvents(SentryRequest request)
+        {
+            var requestString = new StringBuilder("eventsv2/");
+            requestString.Append($"?query={Uri.EscapeUriString(request.query)}");
+            requestString.Append($"&statsPeriod={Uri.EscapeUriString(request.statsPeriod)}");
+            requestString.Append($"&sort={Uri.EscapeUriString(request.sort)}");
+            foreach(string field in request.fields) 
+            {
+                requestString.Append($"&field={Uri.EscapeUriString(field)}");
+            }
+            var response = await client.GetAsync(requestString.ToString());
+            response.EnsureSuccessStatusCode();
+            var result = System.Text.Json.JsonSerializer.Deserialize<SentryFrequentEventsResponse>(await response.Content.ReadAsByteArrayAsync());
+            return result.data;
+        }
     }
 }

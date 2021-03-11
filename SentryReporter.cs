@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using CsvHelper;
+using work_charts.Models.Sentry;
 
 namespace work_charts
 {
@@ -18,7 +19,16 @@ namespace work_charts
             using (var writer = new StreamWriter(csvOutputPath))
             using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
             {
-                csv.Context.RegisterClassMap<EventFrequencyMap>();
+                csv.Context.RegisterClassMap<SentryEventFrequencyMap>();
+                csv.WriteRecords(frequencyResponse);
+            }
+        }
+
+        public void GenerateFrequentEventsReport(SentryFrequentEvent[] frequencyResponse, string csvOutputPath)
+        {
+            using (var writer = new StreamWriter(csvOutputPath))
+            using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+            {
                 csv.WriteRecords(frequencyResponse);
             }
         }

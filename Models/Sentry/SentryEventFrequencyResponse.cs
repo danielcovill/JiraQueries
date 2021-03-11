@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
-using System.Runtime.Serialization;
 using System.Text.Json;
+using CsvHelper.Configuration;
 
 namespace work_charts.Models.Sentry
 {
@@ -11,9 +10,9 @@ namespace work_charts.Models.Sentry
     {
         public object[][] data
         {
-            get 
+            get
             {
-                if(Records == null)
+                if (Records == null)
                 {
                     return null;
                 }
@@ -21,7 +20,7 @@ namespace work_charts.Models.Sentry
             }
             set
             {
-                if(value == null)
+                if (value == null)
                 {
                     return;
                 }
@@ -34,5 +33,13 @@ namespace work_charts.Models.Sentry
 
         public List<KeyValuePair<DateTime, int>> Records { get; set; }
 
+    }
+    public sealed class SentryEventFrequencyMap : ClassMap<KeyValuePair<DateTime, int>>
+    {
+        public SentryEventFrequencyMap()
+        {
+            Map(m => m.Key).Name("Date", "Key");
+            Map(m => m.Value).Name("EventCount", "Value");
+        }
     }
 }

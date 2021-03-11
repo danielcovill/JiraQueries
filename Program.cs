@@ -91,6 +91,16 @@ namespace work_charts
                     case "Sentry most frequent events -7d":
                     {
                         var reporter = new SentryReporter();
+                        var sentryRequest = new SentryRequest()
+                        {
+                            sort = "-count",
+                            statsPeriod = "7d",
+                            query = "event.type:error",
+                            fields = new[] { "count()", "title" }
+                        };
+                        var frequentEventsResult = await SentryConnector.Instance.GetFrequentEvents(sentryRequest);
+                        reporter.GenerateFrequentEventsReport(frequentEventsResult,
+                            Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
                         break;
                     }
                     default:
