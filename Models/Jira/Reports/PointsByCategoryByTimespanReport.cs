@@ -1,6 +1,6 @@
 using System;
 
-namespace work_charts.Models
+namespace work_charts.Models.Jira
 {
     public class PointsByCategoryByTimespanReport
     {

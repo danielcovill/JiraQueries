@@ -1,6 +1,0 @@
-project = smart 
-AND ((createdDate > -70d AND createdDate < 0d)
-    OR status changed FROM Open during (-70d, 0d)
-    OR status changed FROM Deferred during (-70d, 0d))
-AND (resolution is empty OR resolution = Done)
-AND type = Bug

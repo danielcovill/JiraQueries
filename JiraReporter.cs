@@ -4,7 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using CsvHelper;
-using work_charts.Models;
+using work_charts.Models.Jira;
 
 namespace work_charts
 {

@@ -8,7 +8,7 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Net.Http.Json;
 using System.Collections.Generic;
-using System.Text.Json.Serialization;
+using work_charts.Models.Jira;
 using System.Web;
 
 namespace work_charts

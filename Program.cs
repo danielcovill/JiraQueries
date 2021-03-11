@@ -1,6 +1,9 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using work_charts.Models.Jira;
+using work_charts.Models.Sentry;
 
 namespace work_charts
 {
@@ -13,57 +16,87 @@ namespace work_charts
                 "Team Output - 10wk, 2wk, and 1wk output per Engineer",
                 "Weekly Points Summary - Broken down by work item type",
                 "Bugs Summary - Overview of regressions, escapes, etc.",
-                "Stalled Summary - Overview of stalled and blocked tickets"
+                "Stalled Summary - Overview of stalled and blocked tickets",
+                "Sentry Events Frequency",
+                "Sentry most frequent events -7d"
             };
             while (true)
             {
                 var requestedReport = selectReport(reports);
 
-                var reporter = new JiraReporter();
                 var outputPath = Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop),
-                    $"jiraReport-{DateTime.Now.ToString("yyyy-MM-ddTHHmm-ss")}.csv");
+                    $"Report-{DateTime.Now.ToString("yyyy-MM-ddTHHmm-ss")}.csv");
 
                 switch (requestedReport)
                 {
                     case "Team Output - 10wk, 2wk, and 1wk output per Engineer":
-                        {
-                            var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Queries", "Done previous 10wk.jql")));
-                            var searchResult = await JiraConnector.Instance.GetSearchResults(jqlRestRequest);
-                            var engineeringGroup = await JiraConnector.Instance.GetGroup(new JiraGroupRequest("engineers"));
-                            var engineers = engineeringGroup.users;
-                            reporter.GenerateTeamOutputReport(searchResult, engineers,
-                                Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
-                            break;
-                        }
+                    {
+                        var reporter = new JiraReporter();
+                        var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Queries", "Done previous 10wk.jql")));
+                        var searchResult = await JiraConnector.Instance.GetSearchResults(jqlRestRequest);
+                        var engineeringGroup = await JiraConnector.Instance.GetGroup(new JiraGroupRequest("engineers"));
+                        var engineers = engineeringGroup.users;
+                        reporter.GenerateTeamOutputReport(searchResult, engineers,
+                            Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
+                        break;
+                    }
                     case "Weekly Points Summary - Broken down by work item type":
-                        {
-                            var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Queries", "Done previous 10wk.jql")));
-                            var searchResult = await JiraConnector.Instance.GetSearchResults(jqlRestRequest);
-                            reporter.GenerateWorkSummaryReport(searchResult, 70, 7,
-                                Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
-                            break;
-                        }
+                    {
+                        var reporter = new JiraReporter();
+                        var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Queries", "Done previous 10wk.jql")));
+                        var searchResult = await JiraConnector.Instance.GetSearchResults(jqlRestRequest);
+                        reporter.GenerateWorkSummaryReport(searchResult, 70, 7,
+                            Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
+                        break;
+                    }
                     case "Bugs Summary - Overview of regressions, escapes, etc.":
-                        {
-                            var jqlBugRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Queries", "Bugs created 10wk.jql")));
-                            var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Queries", "Done previous 10wk.jql")));
-                            var jiraQueries = new Task<JiraSearchResponse>[2] {
-                        JiraConnector.Instance.GetSearchResults(jqlBugRestRequest),
-                        JiraConnector.Instance.GetSearchResults(jqlRestRequest),
-                    };
-                            Task.WaitAll(jiraQueries);
-                            reporter.GenerateBugReport(jiraQueries[0].Result, jiraQueries[1].Result, 70, 7,
-                                Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
-                            break;
-                        }
+                    {
+                        var reporter = new JiraReporter();
+                        var jqlBugRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Queries", "Bugs created 10wk.jql")));
+                        var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Queries", "Done previous 10wk.jql")));
+                        var jiraQueries = new Task<JiraSearchResponse>[2] {
+                            JiraConnector.Instance.GetSearchResults(jqlBugRestRequest),
+                            JiraConnector.Instance.GetSearchResults(jqlRestRequest),
+                        };
+                        Task.WaitAll(jiraQueries);
+                        reporter.GenerateBugReport(jiraQueries[0].Result, jiraQueries[1].Result, 70, 7,
+                            Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
+                        break;
+                    }
                     case "Stalled Summary - Overview of stalled and blocked tickets":
+                    {
+                        var reporter = new JiraReporter();
+                        var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Queries", "Blocked and Stalled.jql")));
+                        var searchResult = await JiraConnector.Instance.GetSearchResults(jqlRestRequest);
+                        reporter.GenerateStalledReport(searchResult,
+                            Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
+                        break;
+                    }
+                    case "Sentry Events Frequency":
+                    {
+                        var reporter = new SentryReporter();
+                        var sentryRequest = new SentryRequest()
                         {
-                            var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Queries", "Blocked and Stalled.jql")));
-                            var searchResult = await JiraConnector.Instance.GetSearchResults(jqlRestRequest);
-                            reporter.GenerateStalledReport(searchResult,
-                                Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
-                            break;
-                        }
+                            interval = "1d",
+                            sort = "-timestamp",
+                            statsPeriod = "35d",
+                            query = "event.type:error",
+                            fields = new[] { "count()", "timestamp" }
+                        };
+                        var eventFrequencyResult = await SentryConnector.Instance.GetEventFrequency(sentryRequest);
+                        reporter.GenerateEventFrequencyReport(eventFrequencyResult,
+                            Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
+                        break;
+                    }
+                    case "Sentry most frequent events -7d":
+                    {
+                        var reporter = new SentryReporter();
+                        break;
+                    }
+                    default:
+                    {
+                        throw new Exception("Requested report does not exist");
+                    }
                 }
                 Console.WriteLine($"Report generated: {outputPath}");
             }
