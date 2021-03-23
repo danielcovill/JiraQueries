@@ -13,9 +13,9 @@ namespace work_charts.Models.Jira
         [CsvHelper.Configuration.Attributes.Index(2)]
         public int BugsCaught { get; set; } 
         [CsvHelper.Configuration.Attributes.Index(3)]
-        public double BugsPerTicket { get; set; }
+        public double BugsPerTenStoryMaintTickets { get; set; }
         [CsvHelper.Configuration.Attributes.Index(4)]
-        public double BugsPerPoint {get; set; }
+        public double BugsPerStoryMaintPoint {get; set; }
         [CsvHelper.Configuration.Attributes.Index(5)]
         public int Regressions { get; internal set; }
         [CsvHelper.Configuration.Attributes.Index(0)]

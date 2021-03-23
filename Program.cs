@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 using work_charts.Models.Jira;
 using work_charts.Models.Sentry;
 
@@ -16,6 +15,7 @@ namespace work_charts
                 "Team Output - 10wk, 2wk, and 1wk output per Engineer",
                 "Weekly Points Summary - Broken down by work item type",
                 "Bugs Summary - Overview of regressions, escapes, etc.",
+                "Unlinked Bug Query - JQL query of bugs that aren't linked to their causing stories",
                 "Stalled Summary - Overview of stalled and blocked tickets",
                 "Sentry Events Frequency",
                 "Sentry most frequent events -7d"
@@ -32,7 +32,7 @@ namespace work_charts
                     case "Team Output - 10wk, 2wk, and 1wk output per Engineer":
                     {
                         var reporter = new JiraReporter();
-                        var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Queries", "Done previous 10wk.jql")));
+                        var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Models", @"Jira", @"Queries", "Done previous 10wk.jql")));
                         var searchResult = await JiraConnector.Instance.GetSearchResults(jqlRestRequest);
                         var engineeringGroup = await JiraConnector.Instance.GetGroup(new JiraGroupRequest("engineers"));
                         var engineers = engineeringGroup.users;
@@ -43,7 +43,7 @@ namespace work_charts
                     case "Weekly Points Summary - Broken down by work item type":
                     {
                         var reporter = new JiraReporter();
-                        var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Queries", "Done previous 10wk.jql")));
+                        var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Models", @"Jira", @"Queries", "Done previous 10wk.jql")));
                         var searchResult = await JiraConnector.Instance.GetSearchResults(jqlRestRequest);
                         reporter.GenerateWorkSummaryReport(searchResult, 70, 7,
                             Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
@@ -52,8 +52,8 @@ namespace work_charts
                     case "Bugs Summary - Overview of regressions, escapes, etc.":
                     {
                         var reporter = new JiraReporter();
-                        var jqlBugRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Queries", "Bugs created 10wk.jql")));
-                        var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Queries", "Done previous 10wk.jql")));
+                        var jqlBugRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Models", @"Jira", @"Queries", "Bugs created 10wk.jql")));
+                        var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Models", @"Jira", @"Queries", "Done previous 10wk.jql")));
                         var jiraQueries = new Task<JiraSearchResponse>[2] {
                             JiraConnector.Instance.GetSearchResults(jqlBugRestRequest),
                             JiraConnector.Instance.GetSearchResults(jqlRestRequest),
@@ -66,7 +66,7 @@ namespace work_charts
                     case "Stalled Summary - Overview of stalled and blocked tickets":
                     {
                         var reporter = new JiraReporter();
-                        var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Queries", "Blocked and Stalled.jql")));
+                        var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Models", @"Jira", @"Queries", "Blocked and Stalled.jql")));
                         var searchResult = await JiraConnector.Instance.GetSearchResults(jqlRestRequest);
                         reporter.GenerateStalledReport(searchResult,
                             Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
@@ -79,7 +79,7 @@ namespace work_charts
                         {
                             interval = "1d",
                             sort = "-timestamp",
-                            statsPeriod = "35d",
+                            statsPeriod = "70d",
                             query = "event.type:error",
                             fields = new[] { "count()", "timestamp" }
                         };
@@ -95,7 +95,7 @@ namespace work_charts
                         {
                             sort = "-count",
                             statsPeriod = "7d",
-                            query = "event.type:error",
+                            query = "event.type:error !is:ignored",
                             fields = new[] { "count()", "title" }
                         };
                         var frequentEventsResult = await SentryConnector.Instance.GetFrequentEvents(sentryRequest);

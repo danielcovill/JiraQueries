@@ -22,7 +22,7 @@ namespace work_charts
         public void GenerateWorkSummaryReport(JiraSearchResponse searchResponse, int daysOfHistory, int daysPerTimespan, string csvOutputPath)
         {
             var results = new List<PointsByCategoryByTimespanReport>();
-            var spanEnd = DateTime.Today;
+            var spanEnd = DateTime.Today.AddDays(1).AddMilliseconds(-1);
             while (daysOfHistory > 0)
             {
                 results.Add(new PointsByCategoryByTimespanReport()
@@ -106,19 +106,19 @@ namespace work_charts
         public void GenerateBugReport(JiraSearchResponse bugSearchResponse, JiraSearchResponse allSearchResponse, int daysOfHistory, int daysPerTimespan, string csvOutputPath)
         {
             var results = new List<BugsReport>();
-            var spanEnd = DateTime.Today;
+            var spanEnd = DateTime.Today.AddDays(1).AddMilliseconds(-1);
             while (daysOfHistory > 0)
             {
                 var createdBugsCollection = bugSearchResponse.GetTickets(
                     createdStartDate: spanEnd.AddDays(-daysPerTimespan),
                     createdEndDate: spanEnd);
                 var createdBugsCount = createdBugsCollection.Count();
-                var completedTicketCount = allSearchResponse.GetTickets(
+                var completedStoryMaintCount = allSearchResponse.GetTickets(
                     resolvedStartDate: spanEnd.AddDays(-daysPerTimespan),
-                    resolvedEndDate: spanEnd).Count();
-                var completedTicketPoints = allSearchResponse.GetTickets(
+                    resolvedEndDate: spanEnd).Where(ticket => ticket.fields.issuetype.name == "Bug" || ticket.fields.issuetype.name == "Story").Count();
+                var completedStoryMaintPoints = allSearchResponse.GetTickets(
                     resolvedStartDate: spanEnd.AddDays(-daysPerTimespan),
-                    resolvedEndDate: spanEnd).Where(ticket => ticket.fields.storyPoints != null).Sum(ticket => ticket.fields.storyPoints).Value;
+                    resolvedEndDate: spanEnd).Where(ticket => ticket.fields.storyPoints != null && (ticket.fields.issuetype.name == "Bug" || ticket.fields.issuetype.name == "Story")).Sum(ticket => ticket.fields.storyPoints).Value;
                 var escapedBugCount = createdBugsCollection.Where(bug =>
                     bug.fields.environment != null && bug.fields.environment.Contains("production", StringComparison.InvariantCultureIgnoreCase) ||
                     bug.fields.environment != null && bug.fields.environment.Contains("all", StringComparison.InvariantCultureIgnoreCase) ||
@@ -130,8 +130,8 @@ namespace work_charts
                     EndDate = spanEnd,
                     BugsEscaped = escapedBugCount,
                     BugsCaught = createdBugsCount - escapedBugCount,
-                    BugsPerTicket = (double)createdBugsCount / completedTicketCount,
-                    BugsPerPoint = (double)createdBugsCount / completedTicketPoints,
+                    BugsPerTenStoryMaintTickets = ((double)createdBugsCount / completedStoryMaintCount) * 10,//FIXME - needs to only count completed story/maint tickets
+                    BugsPerStoryMaintPoint = (double)createdBugsCount / completedStoryMaintPoints,//FIXME - needs to only count completed story/maint ticket points
                     Regressions = createdBugsCollection.Where(bug => bug.fields.regressions != null && bug.fields.regressions.Any(regression => regression.value.Equals("Is Regression"))).Count(),
                 });
                 spanEnd = spanEnd.AddDays(-daysPerTimespan);
