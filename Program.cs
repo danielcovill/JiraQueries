@@ -15,7 +15,6 @@ namespace work_charts
                 "Team Output - 10wk, 2wk, and 1wk output per Engineer",
                 "Weekly Points Summary - Broken down by work item type",
                 "Bugs Summary - Overview of regressions, escapes, etc.",
-                "Stalled Summary - Overview of stalled and blocked tickets",
                 "Sentry Events Frequency",
                 "Sentry most frequent events -7d"
             };
@@ -59,15 +58,6 @@ namespace work_charts
                         };
                         Task.WaitAll(jiraQueries);
                         reporter.GenerateBugReport(jiraQueries[0].Result, jiraQueries[1].Result, 70, 7,
-                            Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
-                        break;
-                    }
-                    case "Stalled Summary - Overview of stalled and blocked tickets":
-                    {
-                        var reporter = new JiraReporter();
-                        var jqlRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Models", @"Jira", @"Queries", "Blocked and Stalled.jql")));
-                        var searchResult = await JiraConnector.Instance.GetSearchResults(jqlRestRequest);
-                        reporter.GenerateStalledReport(searchResult,
                             Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
                         break;
                     }
