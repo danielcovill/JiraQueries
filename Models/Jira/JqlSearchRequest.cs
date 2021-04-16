@@ -37,7 +37,7 @@ namespace work_charts.Models.Jira
                 , "resolved"
                 , "components"
                 , "creator"
-                , "environment"
+                , "customfield_10032" // Exposure - how far did a bug get before it was caught (dev, qa, staging, prod?)
                 , "resolutiondate"
                 , "updated"
                 , "customfield_10031" // Regressions which is a list of regression objects with key "IsRegression"

@@ -59,6 +59,11 @@ namespace work_charts.Models.Jira
         public string name { get; set; } 
     }
 
+    public class Exposure {
+        public string self { get; set; }
+        public string value { get; set; }
+        public string id { get; set; }
+    }
     public class Customfield10027    {
         public string self { get; set; } 
         public string accountId { get; set; } 
@@ -270,6 +275,8 @@ namespace work_charts.Models.Jira
         public object aggregatetimespent { get; set; } 
         public Resolution resolution { get; set; } 
         public List<Customfield10027> customfield_10027 { get; set; } 
+        [JsonPropertyName("customfield_10032")]
+        public Exposure exposure { get; set; } 
         public object customfield_10029 { get; set; } 
         public DateTime? resolutiondate { get; set; } 
         public int workratio { get; set; } 

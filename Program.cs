@@ -15,7 +15,6 @@ namespace work_charts
                 "Team Output - 10wk, 2wk, and 1wk output per Engineer",
                 "Weekly Points Summary - Broken down by work item type",
                 "Bugs Summary - Overview of regressions, escapes, etc.",
-                "Unlinked Bug Query - JQL query of bugs that aren't linked to their causing stories",
                 "Stalled Summary - Overview of stalled and blocked tickets",
                 "Sentry Events Frequency",
                 "Sentry most frequent events -7d"

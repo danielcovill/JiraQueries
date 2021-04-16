@@ -120,9 +120,7 @@ namespace work_charts
                     resolvedStartDate: spanEnd.AddDays(-daysPerTimespan),
                     resolvedEndDate: spanEnd).Where(ticket => ticket.fields.storyPoints != null && (ticket.fields.issuetype.name == "Bug" || ticket.fields.issuetype.name == "Story")).Sum(ticket => ticket.fields.storyPoints).Value;
                 var escapedBugCount = createdBugsCollection.Where(bug =>
-                    bug.fields.environment != null && bug.fields.environment.Contains("production", StringComparison.InvariantCultureIgnoreCase) ||
-                    bug.fields.environment != null && bug.fields.environment.Contains("all", StringComparison.InvariantCultureIgnoreCase) ||
-                    bug.fields.environment != null && bug.fields.environment.Contains("prod", StringComparison.InvariantCultureIgnoreCase)).Count();
+                    bug.fields.exposure != null && bug.fields.exposure.value == "Production").Count();
 
                 results.Add(new BugsReport()
                 {
@@ -130,8 +128,8 @@ namespace work_charts
                     EndDate = spanEnd,
                     BugsEscaped = escapedBugCount,
                     BugsCaught = createdBugsCount - escapedBugCount,
-                    BugsPerTenStoryMaintTickets = ((double)createdBugsCount / completedStoryMaintCount) * 10,//FIXME - needs to only count completed story/maint tickets
-                    BugsPerStoryMaintPoint = (double)createdBugsCount / completedStoryMaintPoints,//FIXME - needs to only count completed story/maint ticket points
+                    BugsPerTenStoryMaintTickets = ((double)createdBugsCount / completedStoryMaintCount) * 10,
+                    BugsPerStoryMaintPoint = (double)createdBugsCount / completedStoryMaintPoints,
                     Regressions = createdBugsCollection.Where(bug => bug.fields.regressions != null && bug.fields.regressions.Any(regression => regression.value.Equals("Is Regression"))).Count(),
                 });
                 spanEnd = spanEnd.AddDays(-daysPerTimespan);
