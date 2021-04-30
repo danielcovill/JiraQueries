@@ -1,0 +1,5 @@
+project = smart 
+and type = bug 
+and status = done 
+and resolution = done 
+and resolved > -70d

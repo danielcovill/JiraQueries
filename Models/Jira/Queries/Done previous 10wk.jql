@@ -1,5 +1,5 @@
 project = smart 
-AND (status changed to Done during (-70d, 0d))
+AND (status changed to 10002 during (-70d, 0d))
 AND status = Done
 AND resolution = Done
 AND assignee not in membersOf(EngineeringContractors)

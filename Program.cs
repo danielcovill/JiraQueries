@@ -15,6 +15,7 @@ namespace work_charts
                 "Team Output - 10wk, 2wk, and 1wk output per Engineer",
                 "Weekly Points Summary - Broken down by work item type",
                 "Bugs Summary - Overview of regressions, escapes, etc.",
+                "Bugs by Team - Bugs generated per Engineer",
                 "Sentry Events Frequency",
                 "Sentry most frequent events -7d"
             };
@@ -59,6 +60,13 @@ namespace work_charts
                         Task.WaitAll(jiraQueries);
                         reporter.GenerateBugReport(jiraQueries[0].Result, jiraQueries[1].Result, 70, 7,
                             Path.Combine(Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), outputPath));
+                        break;
+                    }
+                    case "Bugs by Team - Bugs generated per Engineer":
+                    {
+                        var reporter = new JiraReporter();
+                        var jqlBugRestRequest = new JqlSearchRequest(File.ReadAllText(Path.Combine(@"Models", @"Jira", @"Queries", "Bugs completed 10wk.jql")));
+                        var searchResult = await JiraConnector.Instance.GetSearchResults(jqlBugRestRequest);
                         break;
                     }
                     case "Sentry Events Frequency":
