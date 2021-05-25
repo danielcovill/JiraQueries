@@ -71,7 +71,7 @@ namespace work_charts
         public void GenerateTeamOutputReport(JiraSearchResponse searchResponse, List<User> engineers, string csvOutputPath)
         {
             var results = new List<EngineerOutputReport>();
-            foreach (var engineer in engineers)
+            foreach (var engineer in engineers.OrderBy(a => a.name))
             {
                 results.Add(new EngineerOutputReport()
                 {
